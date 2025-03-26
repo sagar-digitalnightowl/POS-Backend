@@ -1,6 +1,5 @@
 import userModel from "../../models/userManagement/user.model.js";
 import userProfileModel from "../../models/userManagement/userProfile.model.js";
-import Role from "../../models/userManagement/role.model.js";
 import bcrypt from "bcrypt";
 const routes = {};
 
@@ -66,9 +65,6 @@ routes.addUser = async (req, res) => {
     const isEmailExist = await userModel.findOne({ email });
     if (isEmailExist)
       return res.status(400).json({ error: "Email already exist" });
-
-    const roleExists = await Role.findById(role);
-   if (!roleExists) return res.status(400).json({ error: "Invalid Role ID" });
 
     const encryptPassword = await bcrypt.hash(password, 10);
 
@@ -136,10 +132,7 @@ routes.addUser = async (req, res) => {
 
 routes.getAllUser = async (req, res) => {
   try {
-    const users = await userModel.find()
-    // .populate("userProfile", { role: 1 })
-    .populate("userProfile","salesCommissionPercentage role")
-    // .populate("userProfile","role")
+    const users = await userModel.find().populate("userProfile", { role: 1 });
     if (!users) return res.status(404).json({ error: "Users not found" });
     return res
       .status(200)

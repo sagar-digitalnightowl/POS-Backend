@@ -14,7 +14,10 @@ const PORT=process.env.PORT ||1000
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
 app.use(morgan("dev"))
-app.use(cors())
+app.use(cors({
+    origin: true,
+    credentials:true
+  }));
 
 //routes
  app.use("/admin",adminRoutes)

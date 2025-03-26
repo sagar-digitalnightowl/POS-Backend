@@ -136,7 +136,10 @@ routes.addUser = async (req, res) => {
 
 routes.getAllUser = async (req, res) => {
   try {
-    const users = await userModel.find().populate("userProfile", { role: 1 }).populate("userProfile","salesCommissionPercentage");
+    const users = await userModel.find()
+    .populate("userProfile", { role: 1 })
+    .populate("userProfile","salesCommissionPercentage")
+    .populate("userProfile","role")
     if (!users) return res.status(404).json({ error: "Users not found" });
     return res
       .status(200)

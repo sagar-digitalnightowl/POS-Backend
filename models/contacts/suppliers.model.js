@@ -150,3 +150,7 @@ const supplierSchema = new mongoose.Schema({
 
 const Supplier = mongoose.model("Supplier", supplierSchema);
 export default Supplier;
+
+
+
+

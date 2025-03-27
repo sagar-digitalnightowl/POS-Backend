@@ -84,7 +84,7 @@ routes.updateSelseAgent = async (req, res) => {
 routes.deleteSelseAgent = async (req, res) => {
   try {
     const agentId = req.params.id;
-    const agent = selseCommissionAgent.findByIdAndDelete(agentId);
+    const agent = await selseCommissionAgent.findByIdAndDelete(agentId);
     if (!agent)
       return res.status(404).json({ error: "Agent not found with that id" });
     res.status(200).json({ message: "document is delete successfully" });

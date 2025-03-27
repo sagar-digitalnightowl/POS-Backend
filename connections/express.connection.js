@@ -10,10 +10,7 @@ const app = express();
 
 const PORT = process.env.PORT || 1000;
 
-//middlewares
-app.use(bodyParser.json()); // Parses JSON requests
-app.use(bodyParser.urlencoded({ extended: true })); // Parses URL-encoded data
-app.use(morgan("dev"));
+
 
 
 app.use(
@@ -23,6 +20,11 @@ app.use(
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"], // Allowed methods
   })
 );
+
+//middlewares
+app.use(bodyParser.json()); // Parses JSON requests
+app.use(bodyParser.urlencoded({ extended: true })); // Parses URL-encoded data
+app.use(morgan("dev"));
 
 //routes
 app.use("/admin", adminRoutes);

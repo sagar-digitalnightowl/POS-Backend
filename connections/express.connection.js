@@ -1,39 +1,40 @@
-import express from "express"
-import {config} from "dotenv"
-import morgan from "morgan"
-import cors from "cors"
-import adminRoutes from "../routes/index.js"
-config()
+import express from "express";
+import { config } from "dotenv";
+import morgan from "morgan";
+import cors from "cors";
+import adminRoutes from "../routes/index.js";
+config();
 
+const app = express();
 
-const app=express()
+const PORT = process.env.PORT || 1000;
 
-const PORT=process.env.PORT ||1000  
- 
 //middlewares
-app.use(express.json())
-app.use(express.urlencoded({extended:true}))
-app.use(morgan("dev"))
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan("dev"));
 
-app.use(cors({
-    origin: "*",
-    credentials:true
-  }));
+app.use(
+  cors({
+    origin: "http://localhost:3000", // Specify your exact frontend origin
+    credentials: true, // Allow credentials
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"], // Allowed methods
+  })
+);
 
 //routes
- app.use("/admin",adminRoutes)
+app.use("/admin", adminRoutes);
 
-app.get("/",(req,res)=>{
-    res.send("Server Running👍")
-})
+app.get("/", (req, res) => {
+  res.send("Server Running👍");
+});
 
-export const startServer=()=>{
-    try{
-        app.listen(PORT,()=>{
-            console.log(`server started at: http://localhost:${PORT} `)
-               
-        })
-    }catch(err){
-        throw new Error(err)
-    }
-}
+export const startServer = () => {
+  try {
+    app.listen(PORT, () => {
+      console.log(`server started at: http://localhost:${PORT} `);
+    });
+  } catch (err) {
+    throw new Error(err);
+  }
+};

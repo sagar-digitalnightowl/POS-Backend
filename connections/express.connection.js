@@ -3,6 +3,7 @@ import { config } from "dotenv";
 import morgan from "morgan";
 import cors from "cors";
 import adminRoutes from "../routes/index.js";
+import bodyParser from "body-parser";
 config();
 
 const app = express();
@@ -10,9 +11,10 @@ const app = express();
 const PORT = process.env.PORT || 1000;
 
 //middlewares
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.json()); // Parses JSON requests
+app.use(bodyParser.urlencoded({ extended: true })); // Parses URL-encoded data
 app.use(morgan("dev"));
+
 
 app.use(
   cors({

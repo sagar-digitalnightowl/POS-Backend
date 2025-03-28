@@ -6,6 +6,11 @@ routes.createRole=async(req,res)=>{
         const {roleName}=req.body
         if(!roleName)
             return res.status(400).json({message:"Role name is required"})
+
+        const checkRole = await roleModel.findOne({ roleName });
+        if (checkRole) {
+            return res.status(404).json({ message: "Role is already registered" });
+        }
         
        const newRole=await roleModel.create(req.body)
        res.status(201).json({result:newRole,message:"Role created successfully"})

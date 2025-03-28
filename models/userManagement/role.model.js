@@ -3,6 +3,7 @@ import mongoose, { Schema } from "mongoose";
 const roleSchema=new Schema({
     roleName:{
         type:String,
+        unique: true
     },
     viewExportButtons:{
         type:Boolean,

@@ -6,13 +6,13 @@ const userProfileSchema=new Schema({
         type:Boolean,
         default:false
     },
-    userName:{
-        type:String,
-    },
-    password:{
-        type:String,
-        required:true
-    },
+    // userName:{
+    //     type:String,
+    // },
+    // password:{
+    //     type:String,
+    //     required:true
+    // },
     role:{
         type:String,
     },

@@ -5,11 +5,11 @@ const routes = {};
 
 routes.addCustomer = async (req, res) => {
   try {
-    const { contactId, contactType, firstName, lastName, mobileNo,email } = req.body;
+    const { contactType, firstName, lastName, mobileNo,email } = req.body;
     const {error}=customerAndSupplierValidation.validate(req.body)
     if(error)
         return res.status(400).json({error:error.details[0].message})
-    const existContactId=await customerAndSupplierSchema.findOne({$or:[{contactId},{email}]})
+    const existContactId=await customerAndSupplierSchema.findOne(email)
 
     if(existContactId)
            return res.status(400).json({error:"ContactId or Email is already Exist"})

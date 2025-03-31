@@ -1,6 +1,6 @@
 import userModel from "../../models/userManagement/user.model.js";
 import userProfileModel from "../../models/userManagement/userProfile.model.js";
-import bcrypt from "bcrypt";
+// import bcrypt from "bcrypt";
 const routes = {};
 
 routes.addUser = async (req, res) => {
@@ -11,8 +11,8 @@ routes.addUser = async (req, res) => {
       email,
       lastName,
       firstName,
-      password,
-      userName,
+      // password,
+      // userName,
       role,
       active,
       enableServiceStaffPin,
@@ -59,18 +59,18 @@ routes.addUser = async (req, res) => {
       return res.status(400).json({ error: "firstName is required" });
     if (!lastName)
       return res.status(400).json({ error: "lastName is required" });
-    if (!password)
-      return res.status(400).json({ error: "password is required" });
+    // if (!password)
+    //   return res.status(400).json({ error: "password is required" });
 
     const isEmailExist = await userModel.findOne({ email });
     if (isEmailExist)
       return res.status(400).json({ error: "Email already exist" });
 
-    const encryptPassword = await bcrypt.hash(password, 10);
+    // const encryptPassword = await bcrypt.hash(password, 10);
 
     const newUserProfile = await userProfileModel.create({
-      userName: userName,
-      password: encryptPassword,
+      // userName: userName,
+      // password: encryptPassword,
       role,
       accessAllLocations,
       posApplicationTradingCompanyWLL,

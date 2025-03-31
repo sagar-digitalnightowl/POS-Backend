@@ -6,9 +6,9 @@ routes.addSelseAgent = async (req, res) => {
   try {
     const { firstName, lastName, email } = req.body;
     if (!firstName)
-      return res.status(400).json({ error: "firstName is required" });
+      return res.status(400).json({ error: "First Name is required" });
     if (!lastName)
-      return res.status(400).json({ error: "lastName is required" });
+      return res.status(400).json({ error: "Last Name is required" });
 
     const existEmail = await selseCommissionAgent.findOne({ email });
 
@@ -18,7 +18,7 @@ routes.addSelseAgent = async (req, res) => {
     const newAgent = await selseCommissionAgent.create(req.body);
     return res
       .status(201)
-      .json({ result: newAgent, message: "document created succesfully " });
+      .json({ result: newAgent, message: "Document created succesfully " });
   } catch (error) {
     console.log("error=", error);
     res.status(500).json({ error: "Something went wrong" });
@@ -38,7 +38,7 @@ routes.getAllSelseAgent = async (req, res) => {
       result: {
         allAgents,
         totalAgent: totalAgent.length,
-        meaasage: "document fetched successfully",
+        meaasage: "Document fetched successfully",
       },
     });
   } catch (error) {

@@ -3,8 +3,8 @@ import mongoose, { Schema } from "mongoose";
 const customerAndSupplierSchema = new Schema({
   contactId: {
     type: String,
-    unique: true,
-    required:true
+    // unique: true,
+    // required:true
   },
   businessName: {
     type: String,

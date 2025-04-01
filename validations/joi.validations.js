@@ -2,7 +2,7 @@ import joi from "joi";
 import mongoose from "mongoose";
 
 export const customerAndSupplierValidation = joi.object({
-  contactId: joi.string().required(),
+  contactId: joi.string(),
   businessName:joi.string(),
   contactType: joi.string().valid("supplier","customer").required(),
   individual: joi.boolean(),

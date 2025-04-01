@@ -1,8 +1,12 @@
 import express from "express"
 import manufacturerController from "../../controllers/contacts/manufacturer.controller.js";
+import multer from 'multer'
+
+const upload=multer()
+
 const router=express.Router();
 
-router.post("/addManufacturer",manufacturerController.addManufacturer)
+router.post("/addManufacturer",upload.any(),manufacturerController.addManufacturer)
       .get("/getAllManufacturer",manufacturerController.getAllManufacturer)
       .get("/getManufacturer/:id",manufacturerController.getManufacturerById)
       .patch("/updateManufacturer/:id",manufacturerController.updateManufacturerById)

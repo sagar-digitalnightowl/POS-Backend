@@ -5,14 +5,15 @@ const routes = {};
 
 routes.addCustomer = async (req, res) => {
   try {
+    console.log("debug",req.body)
     const { contactType, firstName, lastName, mobileNo,email } = req.body;
     const {error}=customerAndSupplierValidation.validate(req.body)
     if(error)
         return res.status(400).json({error:error.details[0].message})
-    const existContactId=await customerAndSupplierSchema.findOne(email)
+    const existContactId=await customerAndSupplierSchema.findOne({email})
 
     if(existContactId)
-           return res.status(400).json({error:"ContactId or Email is already Exist"})
+           return res.status(400).json({error:"Email is already Exist"})
 
     const newCustomer = await customerAndSupplierSchema.create(req.body);
     return res

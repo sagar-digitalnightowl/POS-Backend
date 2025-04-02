@@ -33,7 +33,7 @@ const manufacturerSchema=new Schema({
         type:String
     },
     profilePhotoUrl:{
-        url:{type: String}
+        type:String
     },
     letterUrl:{
         type:String

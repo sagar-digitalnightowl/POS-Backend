@@ -1,26 +1,22 @@
-import multer from "multer";
-import multerS3 from "multer-s3";
-import AWS from "aws-sdk";
-import dotenv from "dotenv";
-dotenv.config();
+import multer from 'multer';
 
-// AWS S3 Configuration
-const s3 = new AWS.S3({
-  region: process.env.AWS_REGION,
-  accessKeyId: process.env.S3_ACCESS_KEY_ID,
-  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-});
-
-// Multer Storage for AWS S3
 export const upload = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: process.env.AWS_BUCKET_NAME,
-    acl: "public-read",
-    contentType: multerS3.AUTO_CONTENT_TYPE, // Auto-detect file type
-    key: function (req, file, cb) {
-      const fileName = `manufacturer-files/${Date.now()}-${file.originalname}`;
-      cb(null, fileName);
-    },
-  }),
+  storage: multer.memoryStorage(), // Store files in memory for S3 upload
+  limits: {
+    fileSize: 5 * 1024 * 1024, // Limit file size to 5MB
+  },
+  fileFilter: (req, file, cb) => {
+    // Validate file types
+    if (file.fieldname === 'profilePhoto') {
+      if (!file.mimetype.match(/^image\/(jpeg|jpg|png|gif)$/)) {
+        return cb(new Error('Only image files are allowed for profile photo'), false);
+      }
+    }
+    if (file.fieldname === 'letter') {
+      if (!file.mimetype.match(/^application\/(pdf|msword|vnd.openxmlformats-officedocument.wordprocessingml.document)$/)) {
+        return cb(new Error('Only PDF or Word documents are allowed for letters'), false);
+      }
+    }
+    cb(null, true);
+  }
 });

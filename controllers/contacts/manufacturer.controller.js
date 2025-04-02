@@ -1,24 +1,66 @@
 import { manufacturerValidation } from "../../validations/joi.validations.js";
 import manufacturerSchema from "../../models/contacts/manufacturer.model.js";
+import { uploadFile, deleteFile } from "../../utils/s3.js";
 
 const routes = {};
 
 routes.addManufacturer = async (req, res) => {
   try {
-    const { name, phoneNumber, email } = req.body;
     const { error } = manufacturerValidation.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
+    const { email } = req.body;
     const isEmailExists = await manufacturerSchema.findOne({ email });
-    if (isEmailExists)
+    if (isEmailExists) {
       return res.status(400).json({ error: "Email Already Exist" });
+    }
 
-    const newDoc = await manufacturerSchema.create(req.body);
-    return res
-      .status(201)
-      .json({ result: newDoc, message: "Document created successfully" });
+    // Handle file uploads
+    const files = req.files;
+    let profilePhotoUrl = '';
+    let letterUrl = '';
+    
+    console.log("Received files:", files); // Debug log to see what files are received
+
+    // Process profile photo if uploaded
+    if (files && files['profilePhoto'] && files['profilePhoto'][0]) {
+      const profilePhoto = files['profilePhoto'][0];
+      console.log("Processing profile photo:", profilePhoto); // Debug log
+      const profilePhotoData = await uploadFile(
+        profilePhoto, 
+        `manufacturers/${Date.now()}_${profilePhoto.originalname}`
+      );
+      profilePhotoUrl = profilePhotoData.Location;
+      console.log("Profile photo URL:", profilePhotoUrl); // Debug log
+    }
+
+    // Process letter if uploaded
+    if (files && files['letter'] && files['letter'][0]) {
+      const letter = files['letter'][0];
+      console.log("Processing letter:", letter); // Debug log
+      const letterData = await uploadFile(
+        letter,
+        `manufacturers/${Date.now()}_${letter.originalname}`
+      );
+      letterUrl = letterData.Location;
+      console.log("Letter URL:", letterUrl); // Debug log
+    }
+
+    // Create manufacturer with file URLs
+    const newDoc = await manufacturerSchema.create({
+      ...req.body,
+      ...(profilePhotoUrl && { profilePhotoUrl }), // Only add if exists
+      ...(letterUrl && { letterUrl }) // Only add if exists
+    });
+
+    return res.status(201).json({ 
+      result: newDoc, 
+      message: "Manufacturer created successfully" 
+    });
+
   } catch (error) {
     console.log("Error", error.message);
+    
     return res.status(500).json({ error: "Something went wrong" });
   }
 };
@@ -56,22 +98,50 @@ routes.getManufacturerById = async (req, res) => {
 routes.updateManufacturerById = async (req, res) => {
   try {
     const { id } = req.params;
+    const existing = await manufacturerSchema.findById(id);
+    if (!existing) return res.status(404).json({ error: "Manufacturer not found" });
+
+    const updateData = { ...req.body };
+    const filesToDelete = [];
+
+    // Helper function to process file updates
+    const processFileUpdate = async (fieldName) => {
+      if (!req.files?.[fieldName]?.[0]) return;
+      
+      const file = req.files[fieldName][0];
+      const newFileName = `manufacturers/${Date.now()}_${file.originalname}`;
+      const uploaded = await uploadFile(file, newFileName);
+      updateData[`${fieldName}Url`] = uploaded.Location;
+      
+      if (existing[`${fieldName}Url`]) {
+        filesToDelete.push(existing[`${fieldName}Url`].split('/').pop());
+      }
+    };
+
+    // Process both file types
+    await Promise.all([
+      processFileUpdate('profilePhoto'),
+      processFileUpdate('letter')
+    ]);
+
+    // Update document and clean up old files
+    const updatedDoc = await manufacturerSchema.findByIdAndUpdate(id, updateData, { new: true });
     
-    const updatedDoc = await manufacturerSchema.findByIdAndUpdate(
-      id,
-      req.body,
-      { new: true }
-    );
-    if (!updatedDoc)
-      return res.status(404).json({ error: "Document not Found with this id" });
-    return res
-      .status(200)
-      .json({ result: updatedDoc, message: "Document updated Successfully" });
+    if (filesToDelete.length > 0) {
+      await Promise.all(filesToDelete.map(key => deleteFile(key).catch(e => console.error(e))));
+    }
+
+    return res.status(200).json({ 
+      result: updatedDoc, 
+      message: "Manufacturer updated successfully" 
+    });
+
   } catch (error) {
-    console.log("Error", error.message);
-    return res.status(500).json({ error: "Something went wrong" });
+    console.error("Update error:", error.message);
+    return res.status(500).json({ error: "Failed to update manufacturer" });
   }
 };
+
 routes.deleteManufacturerById = async (req, res) => {
   try {
     const { id } = req.params;

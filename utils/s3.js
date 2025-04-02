@@ -25,15 +25,15 @@ export const uploadFile = async (file, fileName) => {
     accessKeyId: process.env.S3_ACCESS_KEY_ID,
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
   });
+  
   const params = {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: `${fileName}`,
     Body: file.buffer,
-    mimetype: file.mimetype,
-    ContentType: file.mimetype, //<-- this is what you need!
-    ACL: "public-read",
-    // ContentDisposition: 'inline', //<-- and this !
+    ContentType: file.mimetype,
+    // Removed ACL: "public-read" as it's not needed with proper bucket policies
   };
+  
   const data = await s3.upload(params).promise();
   return data;
 };
@@ -44,18 +44,52 @@ export const deleteFile = async (key) => {
     accessKeyId: process.env.S3_ACCESS_KEY_ID,
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
   });
-  console.log({
-    region: process.env.AWS_REGION,
-    accessKeyId: process.env.S3_ACCESS_KEY_ID,
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-  });
+
+  // First decode URI components in the key
+  const decodedKey = decodeURIComponent(key);
+  
   const params = {
     Bucket: process.env.AWS_BUCKET_NAME,
-    Key: key,
+    Key: decodedKey,
+    // Force actual deletion even with versioning
+    VersionId: null
   };
-  const data = await s3.deleteObject(params).promise();
-  console.log(data);
-  return data;
+
+  console.log('Full deletion params:', params);
+  
+  try {
+    // First try normal deletion
+    let data = await s3.deleteObject(params).promise();
+    
+    // If versioning is enabled, we need to delete all versions
+    const versionParams = {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Prefix: decodedKey
+    };
+    
+    const versions = await s3.listObjectVersions(versionParams).promise();
+    
+    if (versions.Versions?.length > 0) {
+      const deleteVersions = versions.Versions.map(v => ({
+        Key: decodedKey,
+        VersionId: v.VersionId
+      }));
+      
+      await s3.deleteObjects({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Delete: { Objects: deleteVersions }
+      }).promise();
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Complete deletion failed:', {
+      key: decodedKey,
+      error: error.message,
+      stack: error.stack
+    });
+    throw error;
+  }
 };
 
 export const getFiles = async () => {

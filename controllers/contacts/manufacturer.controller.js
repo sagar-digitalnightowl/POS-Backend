@@ -104,7 +104,6 @@ routes.updateManufacturerById = async (req, res) => {
     const updateData = { ...req.body };
     const filesToDelete = [];
 
-    // Helper function to process file updates
     const processFileUpdate = async (fieldName) => {
       if (!req.files?.[fieldName]?.[0]) return;
       
@@ -114,21 +113,31 @@ routes.updateManufacturerById = async (req, res) => {
       updateData[`${fieldName}Url`] = uploaded.Location;
       
       if (existing[`${fieldName}Url`]) {
-        filesToDelete.push(existing[`${fieldName}Url`].split('/').pop());
+        // Properly extract the S3 key from the URL
+        const url = new URL(existing[`${fieldName}Url`]);
+        const oldFileKey = url.pathname.substring(1); // Remove leading slash
+        filesToDelete.push(oldFileKey);
+        console.log(`Marked for deletion: ${oldFileKey}`);
       }
     };
 
-    // Process both file types
     await Promise.all([
       processFileUpdate('profilePhoto'),
       processFileUpdate('letter')
     ]);
 
-    // Update document and clean up old files
     const updatedDoc = await manufacturerSchema.findByIdAndUpdate(id, updateData, { new: true });
     
     if (filesToDelete.length > 0) {
-      await Promise.all(filesToDelete.map(key => deleteFile(key).catch(e => console.error(e))));
+      console.log('Files to be deleted:', filesToDelete);
+      await Promise.all(
+        filesToDelete.map(key => {
+          console.log(`Attempting to delete: ${key}`);
+          return deleteFile(key)
+            .then(() => console.log(`Successfully deleted: ${key}`))
+            .catch(e => console.error(`Failed to delete ${key}:`, e.message));
+        })
+      );
     }
 
     return res.status(200).json({ 
@@ -137,7 +146,7 @@ routes.updateManufacturerById = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Update error:", error.message);
+    console.error("Update error:", error);
     return res.status(500).json({ error: "Failed to update manufacturer" });
   }
 };

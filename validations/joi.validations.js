@@ -98,7 +98,7 @@ export const productValidation = joi.object({
   productType: joi.string().valid("single", "multiple", "combo"),
   defaultPurchasePrice: joi.object({
     excTax: joi.number(),
-    incTex: joi.number(),
+    incTax: joi.number(),
   }),
   margin: joi.number(),
   defaultSellingPrice: joi.object({

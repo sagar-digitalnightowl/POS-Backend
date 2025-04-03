@@ -15,21 +15,26 @@ routes.addProducts = async (req, res) => {
       req.body.productMarketEntryDate = new Date(productMarketEntryDate);
     }
 
-    let urls;
-    if (req.files) {
-      urls = await Promise.all(
-        req.files?.map(async (file) => {
-          const data = await uploadFile(
-            file,
-            `ProductList/${uuidv4()}/-${file.originalname}`
-          );
-          return data.Key;
-        })
+    let urls = [];
+if (req.files && req.files.length > 0) {
+  urls = await Promise.all(
+    req.files.map(async (file) => {
+      const data = await uploadFile(
+        file,
+        `ProductList/${uuidv4()}/-${file.originalname}`
       );
-    }
+      return data.Key;
+    })
+  );
+}
+
    
 
-    const newDoc = await productSchema.create({...req.body,productImage:urls[0],productBrochure:urls[1]});
+const newDoc = await productSchema.create({
+  ...req.body,
+  productImage: urls.length > 0 ? urls[0] : "", // Default to empty string
+  productBrochure: urls.length > 1 ? urls[1] : "", // Default to empty string
+});
     return res
       .status(201)
       .json({ result: newDoc, message: "New Document created successfully" });

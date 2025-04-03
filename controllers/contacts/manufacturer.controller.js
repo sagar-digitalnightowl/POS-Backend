@@ -6,51 +6,53 @@ const routes = {};
 
 routes.addManufacturer = async (req, res) => {
   try {
+    // Validate request body
     const { error } = manufacturerValidation.validate(req.body);
-    if (error) return res.status(400).json({ error: error.details[0].message });
+    if (error) {
+      console.error('Validation error:', error.details);
+      return res.status(400).json({ 
+        error: error.details[0].message,
+        details: error.details 
+      });
+    }
 
+    // Check for email existence
     const { email } = req.body;
     const isEmailExists = await manufacturerSchema.findOne({ email });
     if (isEmailExists) {
-      return res.status(400).json({ error: "Email Already Exist" });
+      return res.status(400).json({ error: "Email already exists" });
     }
 
-    // Handle file uploads
-    const files = req.files;
+    // Process files
+    const files = req.body;
     let profilePhotoUrl = '';
     let letterUrl = '';
-    
-    console.log("Received files:", files); // Debug log to see what files are received
 
-    // Process profile photo if uploaded
-    if (files && files['profilePhoto'] && files['profilePhoto'][0]) {
-      const profilePhoto = files['profilePhoto'][0];
-      console.log("Processing profile photo:", profilePhoto); // Debug log
+    if (files?.profilePhoto?.[0]) {
+      const profilePhoto = files.profilePhoto[0];
+      console.log('Uploading profile photo:', profilePhoto.originalname);
       const profilePhotoData = await uploadFile(
         profilePhoto, 
         `manufacturers/${Date.now()}_${profilePhoto.originalname}`
       );
       profilePhotoUrl = profilePhotoData.Location;
-      console.log("Profile photo URL:", profilePhotoUrl); // Debug log
     }
 
-    // Process letter if uploaded
-    if (files && files['letter'] && files['letter'][0]) {
-      const letter = files['letter'][0];
-      console.log("Processing letter:", letter); // Debug log
+    if (files?.letter?.[0]) {
+      const letter = files.letter[0];
+      console.log('Uploading letter:', letter.originalname);
       const letterData = await uploadFile(
         letter,
         `manufacturers/${Date.now()}_${letter.originalname}`
       );
       letterUrl = letterData.Location;
-      console.log("Letter URL:", letterUrl); // Debug log
     }
 
-    // Create manufacturer with file URLs
+    // Create manufacturer
     const newDoc = await manufacturerSchema.create({
       ...req.body,
-      ...(profilePhotoUrl && { profilePhotoUrl }), // Only add if exists
-      ...(letterUrl && { letterUrl }) // Only add if exists
+      ...(profilePhotoUrl && { profilePhotoUrl }),
+      ...(letterUrl && { letterUrl })
     });
 
     return res.status(201).json({ 
@@ -59,9 +61,11 @@ routes.addManufacturer = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("Error", error.message);
-    
-    return res.status(500).json({ error: "Something went wrong" });
+    console.error('Server error:', error);
+    return res.status(500).json({ 
+      error: "Internal server error",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 

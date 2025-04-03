@@ -58,8 +58,8 @@ export const manufacturerValidation = joi.object({
   website: joi.string(),
   city: joi.string(),
   country: joi.string(),
-  profilePhotoUrl: joi.string(),
-  letterUrl: joi.string(),
+  // profilePhotoUrl: joi.string(),
+  // letterUrl: joi.string(),
 });
 
 export const productValidation = joi.object({

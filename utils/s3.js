@@ -1,95 +1,48 @@
-  import AWS from "aws-sdk"
-  import {config} from "dotenv"
-  config()
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import dotenv from "dotenv";
+dotenv.config();
 
+// ✅ Create S3 client
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.S3_ACCESS_KEY_ID,
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+  },
+});
 
-  export const getSignedUrl = async (key) => {
-    const s3 = new AWS.S3({
-      region: process.env.AWS_REGION,
-      accessKeyId: process.env.S3_ACCESS_KEY_ID,
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-    }); 
+// ✅ Upload file to S3
+export const uploadFile = async (fileBuffer, fileName, mimeType) => {
+  try {
+    const params = {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: fileName,
+      Body: fileBuffer,
+      ContentType: mimeType,
+    };
+    const command = new PutObjectCommand(params);
+    await s3.send(command);
+    console.log("File uploaded successfully:", fileName);
+    return { success: true, Location: `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}` };
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    throw error;
+  }
+};
+
+// ✅ Delete file from S3
+export const deleteFile = async (key) => {
+  try {
     const params = {
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: key,
-      Expires: 60 * 60,
     };
-    const url = await s3.getSignedUrlPromise("getObject", params);
-    console.log(url, "url");
-    return url;
-  };
-
-  export const uploadFile = async (file, fileName) => {
-    const s3 = new AWS.S3({
-      region: process.env.AWS_REGION,
-      accessKeyId: process.env.S3_ACCESS_KEY_ID,
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-    });
-    
-    const params = {
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: `${fileName}`,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-      // Removed ACL: "public-read" as it's not needed with proper bucket policies
-    };
-    
-    const data = await s3.upload(params).promise();
-    return data;
-  };
-
-  export const deleteFile = async (key) => {
-    const s3 = new AWS.S3({
-      region: process.env.AWS_REGION,
-      accessKeyId: process.env.S3_ACCESS_KEY_ID,
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-      logger: console
-    });
-  
-    // Ensure the key is properly decoded
-    const decodedKey = decodeURIComponent(key);
-    
-    const params = {
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: decodedKey,
-    };
-  
-    console.log('Full deletion params:', params);
-    
-    try {
-      // First try normal deletion
-      const data = await s3.deleteObject(params).promise();
-      
-      // Verify deletion was successful
-      try {
-        await s3.headObject(params).promise();
-        console.error('File still exists after deletion:', decodedKey);
-      } catch (headErr) {
-        if (headErr.code === 'NotFound') {
-          console.log('Verified deletion successful:', decodedKey);
-        }
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('Complete deletion failed:', {
-        key: decodedKey,
-        error: error.message,
-        code: error.code
-      });
-      throw error;
-    }
-  };
-
-  export const getFiles = async () => {
-    const s3 = new AWS.S3({
-      region: process.env.AWS_REGION,
-      accessKeyId: process.env.S3_ACCESS_KEY_ID,
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-    });
-    const params = {
-      Bucket: process.env.AWS_BUCKET_NAME,
-    };
-    const data = await s3.listObjects(params).promise();
-    return data;
-  };
+    const command = new DeleteObjectCommand(params);
+    await s3.send(command);
+    console.log("File deleted successfully:", key);
+    return { success: true, message: "File deleted successfully." };
+  } catch (error) {
+    console.error("Error deleting file:", error);
+    throw error;
+  }
+};

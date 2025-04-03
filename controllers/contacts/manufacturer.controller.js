@@ -6,68 +6,67 @@ const routes = {};
 
 routes.addManufacturer = async (req, res) => {
   try {
-    // Validate request body
-    const { error } = manufacturerValidation.validate(req.body);
+    console.log("Received Data:", req.body);
+
+    // ✅ Validate request body
+    const { name, email, address, phoneNumber } = req.body;
+    const { error } = manufacturerValidation.validate({ name, email, address, phoneNumber });
+
     if (error) {
-      console.error('Validation error:', error.details);
-      return res.status(400).json({ 
-        error: error.details[0].message,
-        details: error.details 
-      });
+      return res.status(400).json({ error: error.details[0].message, details: error.details });
     }
 
-    // Check for email existence
-    const { email } = req.body;
+    // ✅ Check for email existence
     const isEmailExists = await manufacturerSchema.findOne({ email });
     if (isEmailExists) {
       return res.status(400).json({ error: "Email already exists" });
     }
 
-    // Process files
-    const files = req.body;
-    let profilePhotoUrl = '';
-    let letterUrl = '';
+    let profilePhotoUrl = "";
+    let letterUrl = "";
 
-    if (files?.profilePhoto?.[0]) {
-      const profilePhoto = files.profilePhoto[0];
-      console.log('Uploading profile photo:', profilePhoto.originalname);
-      const profilePhotoData = await uploadFile(
-        profilePhoto, 
-        `manufacturers/${Date.now()}_${profilePhoto.originalname}`
-      );
+    // ✅ Process uploaded files
+    if (req.files?.profilePhoto) {
+      console.log("Uploading profile photo...");
+      const profileBuffer = req.files.profilePhoto[0].buffer;
+      const profileMimeType = req.files.profilePhoto[0].mimetype;
+      const profilePhotoData = await uploadFile(profileBuffer, `manufacturers/${Date.now()}_profile.jpg`, profileMimeType);
       profilePhotoUrl = profilePhotoData.Location;
     }
 
-    if (files?.letter?.[0]) {
-      const letter = files.letter[0];
-      console.log('Uploading letter:', letter.originalname);
-      const letterData = await uploadFile(
-        letter,
-        `manufacturers/${Date.now()}_${letter.originalname}`
-      );
+    if (req.files?.letter) {
+      console.log("Uploading letter...");
+      const letterBuffer = req.files.letter[0].buffer;
+      const letterMimeType = req.files.letter[0].mimetype;
+      const letterData = await uploadFile(letterBuffer, `manufacturers/${Date.now()}_letter.pdf`, letterMimeType);
       letterUrl = letterData.Location;
     }
 
-    // Create manufacturer
+    // ✅ Create manufacturer entry
     const newDoc = await manufacturerSchema.create({
-      ...req.body,
-      ...(profilePhotoUrl && { profilePhotoUrl }),
-      ...(letterUrl && { letterUrl })
+      name,
+      email,
+      address,
+      phoneNumber,
+      profilePhotoUrl,
+      letterUrl,
     });
 
-    return res.status(201).json({ 
-      result: newDoc, 
-      message: "Manufacturer created successfully" 
+    return res.status(201).json({
+      result: newDoc,
+      message: "Manufacturer created successfully",
     });
 
   } catch (error) {
-    console.error('Server error:', error);
-    return res.status(500).json({ 
+    console.error("Server error:", error);
+    return res.status(500).json({
       error: "Internal server error",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
+
+
 
 routes.getAllManufacturer = async (req, res) => {
   try {

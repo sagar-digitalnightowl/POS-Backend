@@ -1,61 +1,65 @@
 import { productValidation } from "../../validations/joi.validations.js";
 import productSchema from "../../models/products/productList.model.js";
-import { v4 as uuidv4 } from 'uuid';
-import { uploadFile } from "../../utils/s3.js";
+import { uploadFile, deleteFile } from "../../utils/s3.js";
 
 const routes = {};
 
 routes.addProducts = async (req, res) => {
   try {
-    const { productMarketEntryDate } = req.body;
+    console.log("Received product data:", req.body);
 
-    // Parse productMarketEntryDate if present
-    if (productMarketEntryDate) {
-      req.body.productMarketEntryDate = new Date(productMarketEntryDate);
-    }
+    // ✅ Extract and parse JSON fields for nested objects
+    const {
+      defaultPurchasePrice,
+      defaultSellingPrice,
+      ...restBody
+    } = req.body;
 
-    // Validate incoming data
-    const { error } = productValidation.validate(req.body);
+    const productData = {
+      ...restBody,
+      defaultPurchasePrice: defaultPurchasePrice ? JSON.parse(defaultPurchasePrice) : undefined,
+      defaultSellingPrice: defaultSellingPrice ? JSON.parse(defaultSellingPrice) : undefined,
+    };
+
+    // ✅ Validate data using Joi
+    const { error } = productValidation.validate(productData);
     if (error) {
-      return res.status(400).json({ error: error.details[0].message });
+      return res.status(400).json({
+        error: error.details[0].message,
+        details: error.details,
+      });
     }
 
-    // Handle file uploads
-    let productImageKey = "";
-    let productBrochureKey = "";
+    // ✅ Upload files if present
+    let productImage = "";
+    let productBrochure = "";
 
-    const imageFile = req.files.find(f => f.fieldname === "productImage");
-    const brochureFile = req.files.find(f => f.fieldname === "productBrochure");
+    if (req.files) {
+      const imageFile = req.files.find(file => file.fieldname === "productImage");
+      const brochureFile = req.files.find(file => file.fieldname === "productBrochure");
 
-    if (imageFile) {
-      if (!imageFile.mimetype.match(/^image\/(jpeg|jpg|png)$/)) {
-        return res.status(400).json({ error: "Only JPEG, JPG, PNG files are allowed for productImage" });
+      if (imageFile) {
+        const imageUpload = await uploadFile(imageFile.buffer, `products/${Date.now()}_productImage.jpg`, imageFile.mimetype);
+        productImage = imageUpload.Location;
       }
-      const data = await uploadFile(
-        imageFile,
-        `ProductList/${uuidv4()}-${imageFile.originalname}`
-      );
-      productImageKey = data.Key;
-    }
 
-    if (brochureFile) {
-      if (!brochureFile.mimetype.match(/^application\/pdf$/)) {
-        return res.status(400).json({ error: "Only PDF files are allowed for productBrochure" });
+      if (brochureFile) {
+        const brochureUpload = await uploadFile(brochureFile.buffer, `products/${Date.now()}_brochure.pdf`, brochureFile.mimetype);
+        productBrochure = brochureUpload.Location;
       }
-      const data = await uploadFile(
-        brochureFile,
-        `ProductList/${uuidv4()}-${brochureFile.originalname}`
-      );
-      productBrochureKey = data.Key;
     }
 
-    const newDoc = await productSchema.create({
-      ...req.body,
-      productImage: productImageKey,
-      productBrochure: productBrochureKey,
+    // ✅ Create product entry
+    const newProduct = await productSchema.create({
+      ...productData,
+      productImage,
+      productBrochure,
     });
 
-    return res.status(201).json({ result: newDoc, message: "New Product created successfully" });
+    return res.status(201).json({
+      result: newProduct,
+      message: "Product added successfully",
+    });
   } catch (error) {
     console.error("addProducts error:", error.message);
     return res.status(500).json({ error: "Something went wrong" });
@@ -136,37 +140,98 @@ routes.getProductById = async (req, res) => {
 routes.updateProductById = async (req, res) => {
   try {
     const productId = req.params.id;
-    console.log(req.body)       
     if (!productId)
-      return res.status(400).json({ error: "product id is required" });
+      return res.status(400).json({ error: "Product ID is required" });
 
-    const doc = await productSchema.findByIdAndUpdate(productId,req.body,{new:true});
-    if (!doc)
-      return res.status(400).json({ error: "product not found with this id" });
+    const existingProduct = await productSchema.findById(productId);
+    if (!existingProduct)
+      return res.status(404).json({ error: "Product not found" });
+
+    const files = req.files || [];
+
+    const updateData = { ...req.body };
+
+    // Track which fields we're replacing
+    const fileMap = {
+      productImage: null,
+      productBrochure: null,
+    };
+
+    // Handle files (if any)
+    for (const file of files) {
+      const fieldname = file.fieldname;
+
+      // Delete old file if new one is uploaded
+      if (fieldname === "productImage" && existingProduct.productImage) {
+        const oldKey = existingProduct.productImage.split(".com/")[1];
+        await deleteFile(oldKey);
+      }
+
+      if (fieldname === "productBrochure" && existingProduct.productBrochure) {
+        const oldKey = existingProduct.productBrochure.split(".com/")[1];
+        await deleteFile(oldKey);
+      }
+
+      // Upload new file
+      const timestamp = Date.now();
+      const fileName = `products/${timestamp}_${file.originalname}`;
+      const result = await uploadFile(file.buffer, fileName, file.mimetype);
+
+      fileMap[fieldname] = result.Location;
+    }
+
+    // Add uploaded file URLs to update data
+    if (fileMap.productImage) {
+      updateData.productImage = fileMap.productImage;
+    }
+
+    if (fileMap.productBrochure) {
+      updateData.productBrochure = fileMap.productBrochure;
+    }
+
+    const updatedProduct = await productSchema.findByIdAndUpdate(
+      productId,
+      updateData,
+      { new: true }
+    );
 
     return res
       .status(200)
-      .json({ result: doc, message: " document updated successfully" });
+      .json({ result: updatedProduct, message: "Product updated successfully" });
   } catch (error) {
-    return res.status(500).json({ error: "Somethig went wrong" });
+    console.error("updateProductById error:", error.message);
+    return res.status(500).json({ error: "Something went wrong" });
   }
-};
+}; 
 
 routes.deleteProductById = async (req, res) => {
   try {
     const productId = req.params.id;
     if (!productId)
-      return res.status(400).json({ error: "product id is required" });
+      return res.status(400).json({ error: "Product ID is required" });
 
     const doc = await productSchema.findByIdAndDelete(productId);
     if (!doc)
-      return res.status(400).json({ error: "product not found with this id" });
+      return res.status(404).json({ error: "Product not found with this ID" });
+
+    // Delete image file from S3 if exists
+    if (doc.productImage) {
+      const imageKey = doc.productImage.split(".com/")[1];
+      await deleteFile(imageKey);
+    }
+
+    // Delete brochure file from S3 if exists
+    if (doc.productBrochure) {
+      const brochureKey = doc.productBrochure.split(".com/")[1];
+      await deleteFile(brochureKey);
+    }
 
     return res
       .status(200)
-      .json({ result: doc, message: " document deleted successfully" });
+      .json({ result: doc, message: "Product deleted successfully" });
   } catch (error) {
-    return res.status(500).json({ error: "Somethig went wrong" });
+    console.error("deleteProductById error:", error.message);
+    return res.status(500).json({ error: "Something went wrong" });
   }
 };
 

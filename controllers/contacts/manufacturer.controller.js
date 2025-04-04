@@ -101,53 +101,86 @@ routes.getManufacturerById = async (req, res) => {
 routes.updateManufacturerById = async (req, res) => {
   try {
     const { id } = req.params;
+    const { name, email, address, phoneNumber } = req.body;
 
-    // ✅ Fetch existing manufacturer
-    const existing = await manufacturerSchema.findById(id);
-    if (!existing) return res.status(404).json({ error: "Manufacturer not found" });
-
-    const updateData = { ...req.body };
-    const filesToDelete = [];
-
-    // ✅ Helper to upload new file and mark old one for deletion
-    const processFileUpdate = async (fieldName) => {
-      if (!req.files?.[fieldName]?.[0]) return;
-
-      const file = req.files[fieldName][0];
-      const fileBuffer = file.buffer;
-      const mimeType = file.mimetype;
-      const newFileName = `manufacturers/${Date.now()}_${file.originalname}`;
-
-      const uploaded = await uploadFile(fileBuffer, newFileName, mimeType);
-      updateData[`${fieldName}Url`] = uploaded.Location;
-
-      // ✅ Extract key from existing file URL
-      const existingUrl = existing[`${fieldName}Url`];
-      if (existingUrl) {
-        const oldKey = new URL(existingUrl).pathname.slice(1); // remove leading slash
-        filesToDelete.push(oldKey);
-        console.log(`Marked for deletion: ${oldKey}`);
-      }
-    };
-
-    await Promise.all([
-      processFileUpdate("profilePhoto"),
-      processFileUpdate("letter")
-    ]);
-
-    // ✅ Update manufacturer in DB
-    const updatedDoc = await manufacturerSchema.findByIdAndUpdate(id, updateData, { new: true });
-
-    // ✅ Delete old files from S3
-    if (filesToDelete.length > 0) {
-      await Promise.all(
-        filesToDelete.map(key =>
-          deleteFile(key)
-            .then(() => console.log(`Deleted file: ${key}`))
-            .catch(err => console.error(`Error deleting ${key}:`, err.message))
-        )
-      );
+    // ✅ Validate request body
+    const { error } = manufacturerValidation.validate({ name, email, address, phoneNumber });
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message, details: error.details });
     }
+
+    // ✅ Find existing manufacturer
+    const existingManufacturer = await manufacturerSchema.findById(id);
+    if (!existingManufacturer) {
+      return res.status(404).json({ error: "Manufacturer not found" });
+    }
+
+    // ✅ Check for email existence (excluding current record)
+    if (email !== existingManufacturer.email) {
+      const isEmailExists = await manufacturerSchema.findOne({ email, _id: { $ne: id } });
+      if (isEmailExists) {
+        return res.status(400).json({ error: "Email already exists" });
+      }
+    }
+
+    let profilePhotoUrl = existingManufacturer.profilePhotoUrl;
+    let letterUrl = existingManufacturer.letterUrl;
+
+    // ✅ Process profile photo update
+    if (req.files?.profilePhoto) {
+      console.log("Updating profile photo...");
+      
+      // Delete old profile photo if exists
+      if (profilePhotoUrl) {
+        const oldProfileKey = profilePhotoUrl.split('/').pop();
+        await deleteFile(`manufacturers/${oldProfileKey}`);
+      }
+      
+      // Upload new profile photo
+      const profileBuffer = req.files.profilePhoto[0].buffer;
+      const profileMimeType = req.files.profilePhoto[0].mimetype;
+      const profilePhotoData = await uploadFile(
+        profileBuffer,
+        `manufacturers/${Date.now()}_profile.jpg`,
+        profileMimeType
+      );
+      profilePhotoUrl = profilePhotoData.Location;
+    }
+
+    // ✅ Process letter update
+    if (req.files?.letter) {
+      console.log("Updating letter...");
+      
+      // Delete old letter if exists
+      if (letterUrl) {
+        const oldLetterKey = letterUrl.split('/').pop();
+        await deleteFile(`manufacturers/${oldLetterKey}`);
+      }
+      
+      // Upload new letter
+      const letterBuffer = req.files.letter[0].buffer;
+      const letterMimeType = req.files.letter[0].mimetype;
+      const letterData = await uploadFile(
+        letterBuffer,
+        `manufacturers/${Date.now()}_letter.pdf`,
+        letterMimeType
+      );
+      letterUrl = letterData.Location;
+    }
+
+    // ✅ Update manufacturer entry
+    const updatedDoc = await manufacturerSchema.findByIdAndUpdate(
+      id,
+      {
+        name,
+        email,
+        address,
+        phoneNumber,
+        profilePhotoUrl,
+        letterUrl,
+      },
+      { new: true } // Return the updated document
+    );
 
     return res.status(200).json({
       result: updatedDoc,
@@ -155,8 +188,11 @@ routes.updateManufacturerById = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Update error:", error);
-    return res.status(500).json({ error: "Failed to update manufacturer" });
+    console.error("Server error:", error);
+    return res.status(500).json({
+      error: "Internal server error",
+      details: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 };
 
@@ -165,42 +201,43 @@ routes.deleteManufacturerById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // ✅ Find document first
-    const existing = await manufacturerSchema.findById(id);
-    if (!existing) {
-      return res.status(404).json({ error: "Document not found with this id" });
+    // ✅ Find the manufacturer to be deleted
+    const manufacturer = await manufacturerSchema.findById(id);
+    if (!manufacturer) {
+      return res.status(404).json({ error: "Manufacturer not found" });
     }
 
-    // ✅ Collect S3 keys to delete
-    const filesToDelete = [];
-    if (existing.profilePhotoUrl) {
-      const key = new URL(existing.profilePhotoUrl).pathname.slice(1);
-      filesToDelete.push(key);
-    }
-    if (existing.letterUrl) {
-      const key = new URL(existing.letterUrl).pathname.slice(1);
-      filesToDelete.push(key);
+    // ✅ Delete associated files from S3 if they exist
+    if (manufacturer.profilePhotoUrl) {
+      const profilePhotoKey = manufacturer.profilePhotoUrl.split('/').pop();
+      await deleteFile(`manufacturers/${profilePhotoKey}`);
+      console.log("Deleted profile photo from S3");
     }
 
-    // ✅ Delete document from DB
+    if (manufacturer.letterUrl) {
+      const letterKey = manufacturer.letterUrl.split('/').pop();
+      await deleteFile(`manufacturers/${letterKey}`);
+      console.log("Deleted letter from S3");
+    }
+
+    // ✅ Delete the manufacturer record
     await manufacturerSchema.findByIdAndDelete(id);
 
-    // ✅ Delete files from S3 (if any)
-    if (filesToDelete.length > 0) {
-      await Promise.all(
-        filesToDelete.map((key) =>
-          deleteFile(key)
-            .then(() => console.log(`Deleted file: ${key}`))
-            .catch((err) => console.error(`Failed to delete ${key}:`, err.message))
-        )
-      );
-    }
-
-    return res.status(200).json({ message: "Document deleted successfully" });
+    return res.status(200).json({
+      message: "Manufacturer deleted successfully",
+      deletedManufacturer: {
+        id,
+        name: manufacturer.name,
+        email: manufacturer.email
+      }
+    });
 
   } catch (error) {
-    console.error("Error deleting manufacturer:", error.message);
-    return res.status(500).json({ error: "Something went wrong" });
+    console.error("Server error:", error);
+    return res.status(500).json({
+      error: "Internal server error",
+      details: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 };
 

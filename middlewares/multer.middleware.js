@@ -7,12 +7,13 @@ export const upload = multer({
     files: 2, // Maximum 2 files
   },
   fileFilter: (req, file, cb) => {
-    // if (file.fieldname === "profilePhoto" && !file.mimetype.match(/^image\/(jpeg|jpg|png)$/)) {
-    //   return cb(new Error("Only JPEG, JPG, PNG files are allowed for profile photo"), false);
-    // }
-    // if (file.fieldname === "letter" && !file.mimetype.match(/^application\/pdf$/)) {
-    //   return cb(new Error("Only PDF files are allowed for letters"), false);
-    // }
+    if (file.fieldname === "profilePhoto" && !file.mimetype.match(/^image\/(jpeg|jpg|png)$/)) {
+      return cb(new Error("Only JPEG, JPG, PNG files are allowed for profile photo"), false);
+    }
+    if (file.fieldname === "letter" && !file.mimetype.match(/^application\/pdf$/)) {
+      return cb(new Error("Only PDF files are allowed for letters"), false);
+    }
     cb(null, true);
   },
 });
+

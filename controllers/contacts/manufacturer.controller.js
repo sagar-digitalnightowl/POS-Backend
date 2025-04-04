@@ -101,51 +101,57 @@ routes.getManufacturerById = async (req, res) => {
 routes.updateManufacturerById = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // ✅ Fetch existing manufacturer
     const existing = await manufacturerSchema.findById(id);
     if (!existing) return res.status(404).json({ error: "Manufacturer not found" });
 
     const updateData = { ...req.body };
     const filesToDelete = [];
 
+    // ✅ Helper to upload new file and mark old one for deletion
     const processFileUpdate = async (fieldName) => {
       if (!req.files?.[fieldName]?.[0]) return;
-      
+
       const file = req.files[fieldName][0];
+      const fileBuffer = file.buffer;
+      const mimeType = file.mimetype;
       const newFileName = `manufacturers/${Date.now()}_${file.originalname}`;
-      const uploaded = await uploadFile(file, newFileName);
+
+      const uploaded = await uploadFile(fileBuffer, newFileName, mimeType);
       updateData[`${fieldName}Url`] = uploaded.Location;
-      
-      if (existing[`${fieldName}Url`]) {
-        // Properly extract the S3 key from the URL
-        const url = new URL(existing[`${fieldName}Url`]);
-        const oldFileKey = url.pathname.substring(1); // Remove leading slash
-        filesToDelete.push(oldFileKey);
-        console.log(`Marked for deletion: ${oldFileKey}`);
+
+      // ✅ Extract key from existing file URL
+      const existingUrl = existing[`${fieldName}Url`];
+      if (existingUrl) {
+        const oldKey = new URL(existingUrl).pathname.slice(1); // remove leading slash
+        filesToDelete.push(oldKey);
+        console.log(`Marked for deletion: ${oldKey}`);
       }
     };
 
     await Promise.all([
-      processFileUpdate('profilePhoto'),
-      processFileUpdate('letter')
+      processFileUpdate("profilePhoto"),
+      processFileUpdate("letter")
     ]);
 
+    // ✅ Update manufacturer in DB
     const updatedDoc = await manufacturerSchema.findByIdAndUpdate(id, updateData, { new: true });
-    
+
+    // ✅ Delete old files from S3
     if (filesToDelete.length > 0) {
-      console.log('Files to be deleted:', filesToDelete);
       await Promise.all(
-        filesToDelete.map(key => {
-          console.log(`Attempting to delete: ${key}`);
-          return deleteFile(key)
-            .then(() => console.log(`Successfully deleted: ${key}`))
-            .catch(e => console.error(`Failed to delete ${key}:`, e.message));
-        })
+        filesToDelete.map(key =>
+          deleteFile(key)
+            .then(() => console.log(`Deleted file: ${key}`))
+            .catch(err => console.error(`Error deleting ${key}:`, err.message))
+        )
       );
     }
 
-    return res.status(200).json({ 
-      result: updatedDoc, 
-      message: "Manufacturer updated successfully" 
+    return res.status(200).json({
+      result: updatedDoc,
+      message: "Manufacturer updated successfully",
     });
 
   } catch (error) {
@@ -154,18 +160,50 @@ routes.updateManufacturerById = async (req, res) => {
   }
 };
 
+
 routes.deleteManufacturerById = async (req, res) => {
   try {
     const { id } = req.params;
-    const deletedDoc = await manufacturerSchema.findByIdAndDelete(id);
-    if (!deletedDoc)
+
+    // ✅ Find document first
+    const existing = await manufacturerSchema.findById(id);
+    if (!existing) {
       return res.status(404).json({ error: "Document not found with this id" });
-    return res.status(200).json({ message: "Document Delete Successfully" });
+    }
+
+    // ✅ Collect S3 keys to delete
+    const filesToDelete = [];
+    if (existing.profilePhotoUrl) {
+      const key = new URL(existing.profilePhotoUrl).pathname.slice(1);
+      filesToDelete.push(key);
+    }
+    if (existing.letterUrl) {
+      const key = new URL(existing.letterUrl).pathname.slice(1);
+      filesToDelete.push(key);
+    }
+
+    // ✅ Delete document from DB
+    await manufacturerSchema.findByIdAndDelete(id);
+
+    // ✅ Delete files from S3 (if any)
+    if (filesToDelete.length > 0) {
+      await Promise.all(
+        filesToDelete.map((key) =>
+          deleteFile(key)
+            .then(() => console.log(`Deleted file: ${key}`))
+            .catch((err) => console.error(`Failed to delete ${key}:`, err.message))
+        )
+      );
+    }
+
+    return res.status(200).json({ message: "Document deleted successfully" });
+
   } catch (error) {
-    console.log("Error", error.message);
+    console.error("Error deleting manufacturer:", error.message);
     return res.status(500).json({ error: "Something went wrong" });
   }
 };
+
 
 
 export default routes

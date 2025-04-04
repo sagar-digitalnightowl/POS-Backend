@@ -8,39 +8,57 @@ const routes = {};
 routes.addProducts = async (req, res) => {
   try {
     const { productMarketEntryDate } = req.body;
-    console.log(req.files)
-    const { error } = productValidation.validate(req.body);
-    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    // Parse productMarketEntryDate if present
     if (productMarketEntryDate) {
       req.body.productMarketEntryDate = new Date(productMarketEntryDate);
     }
 
-    let urls = [];
-if (req.files && req.files.length > 0) {
-  urls = await Promise.all(
-    req.files.map(async (file) => {
+    // Validate incoming data
+    const { error } = productValidation.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    // Handle file uploads
+    let productImageKey = "";
+    let productBrochureKey = "";
+
+    const imageFile = req.files.find(f => f.fieldname === "productImage");
+    const brochureFile = req.files.find(f => f.fieldname === "productBrochure");
+
+    if (imageFile) {
+      if (!imageFile.mimetype.match(/^image\/(jpeg|jpg|png)$/)) {
+        return res.status(400).json({ error: "Only JPEG, JPG, PNG files are allowed for productImage" });
+      }
       const data = await uploadFile(
-        file,
-        `ProductList/${uuidv4()}/-${file.originalname}`
+        imageFile,
+        `ProductList/${uuidv4()}-${imageFile.originalname}`
       );
-      return data.Key;
-    })
-  );
-}
+      productImageKey = data.Key;
+    }
 
-   
+    if (brochureFile) {
+      if (!brochureFile.mimetype.match(/^application\/pdf$/)) {
+        return res.status(400).json({ error: "Only PDF files are allowed for productBrochure" });
+      }
+      const data = await uploadFile(
+        brochureFile,
+        `ProductList/${uuidv4()}-${brochureFile.originalname}`
+      );
+      productBrochureKey = data.Key;
+    }
 
-const newDoc = await productSchema.create({
-  ...req.body,
-  productImage: urls.length > 0 ? urls[0] : "", // Default to empty string
-  productBrochure: urls.length > 1 ? urls[1] : "", // Default to empty string
-});
-    return res
-      .status(201)
-      .json({ result: newDoc, message: "New Document created successfully" });
+    const newDoc = await productSchema.create({
+      ...req.body,
+      productImage: productImageKey,
+      productBrochure: productBrochureKey,
+    });
+
+    return res.status(201).json({ result: newDoc, message: "New Product created successfully" });
   } catch (error) {
-      console.log("error:",error.message)
-    return res.status(500).json({ error: "Somethig went wrong" });
+    console.error("addProducts error:", error.message);
+    return res.status(500).json({ error: "Something went wrong" });
   }
 };
 

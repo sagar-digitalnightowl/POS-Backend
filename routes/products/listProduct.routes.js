@@ -1,8 +1,7 @@
 import express from "express";
 import listProductController from "../../controllers/products/listProducts.controller.js";
-import multer from "multer"
+import { upload } from "../../middlewares/multer.middleware.js";
 
-const upload=multer()
 
 const router = express.Router();
 

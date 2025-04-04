@@ -6,63 +6,46 @@ const routes = {};
 
 routes.addManufacturer = async (req, res) => {
   try {
-    console.log("Received Data:", req.body);
-
-    // ✅ Validate request body
-    const { name, email, address, phoneNumber } = req.body;
-    const { error } = manufacturerValidation.validate({ name, email, address, phoneNumber });
-
+    // Validate form data (excluding files)
+    const { error } = manufacturerValidation.validate(req.body);
     if (error) {
-      return res.status(400).json({ error: error.details[0].message, details: error.details });
+      return res.status(400).json({ error: error.details[0].message });
     }
 
-    // ✅ Check for email existence
-    const isEmailExists = await manufacturerSchema.findOne({ email });
-    if (isEmailExists) {
-      return res.status(400).json({ error: "Email already exists" });
+    let profilePhotoKey = "";
+    let letterKey = "";
+
+    // Handle uploaded files
+    const profilePhoto = req.files.find(f => f.fieldname === "profilePhoto");
+    const letter = req.files.find(f => f.fieldname === "letter");
+
+    if (profilePhoto) {
+      if (!profilePhoto.mimetype.match(/^image\/(jpeg|jpg|png)$/)) {
+        return res.status(400).json({ error: "Only JPEG, JPG, PNG files are allowed for profilePhoto" });
+      }
+      const uploaded = await uploadFile(profilePhoto, `Manufacturers/${uuidv4()}-${profilePhoto.originalname}`);
+      profilePhotoKey = uploaded.Key;
     }
 
-    let profilePhotoUrl = "";
-    let letterUrl = "";
-
-    // ✅ Process uploaded files
-    if (req.files?.profilePhoto) {
-      console.log("Uploading profile photo...");
-      const profileBuffer = req.files.profilePhoto[0].buffer;
-      const profileMimeType = req.files.profilePhoto[0].mimetype;
-      const profilePhotoData = await uploadFile(profileBuffer, `manufacturers/${Date.now()}_profile.jpg`, profileMimeType);
-      profilePhotoUrl = profilePhotoData.Location;
+    if (letter) {
+      if (!letter.mimetype.match(/^application\/pdf$/)) {
+        return res.status(400).json({ error: "Only PDF files are allowed for letter" });
+      }
+      const uploaded = await uploadFile(letter, `Manufacturers/${uuidv4()}-${letter.originalname}`);
+      letterKey = uploaded.Key;
     }
 
-    if (req.files?.letter) {
-      console.log("Uploading letter...");
-      const letterBuffer = req.files.letter[0].buffer;
-      const letterMimeType = req.files.letter[0].mimetype;
-      const letterData = await uploadFile(letterBuffer, `manufacturers/${Date.now()}_letter.pdf`, letterMimeType);
-      letterUrl = letterData.Location;
-    }
-
-    // ✅ Create manufacturer entry
-    const newDoc = await manufacturerSchema.create({
-      name,
-      email,
-      address,
-      phoneNumber,
-      profilePhotoUrl,
-      letterUrl,
+    // Create document
+    const newManufacturer = await manufacturerSchema.create({
+      ...req.body,
+      profilePhoto: profilePhotoKey,
+      letter: letterKey,
     });
 
-    return res.status(201).json({
-      result: newDoc,
-      message: "Manufacturer created successfully",
-    });
-
-  } catch (error) {
-    console.error("Server error:", error);
-    return res.status(500).json({
-      error: "Internal server error",
-      details: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    return res.status(201).json({ result: newManufacturer, message: "Manufacturer added successfully" });
+  } catch (err) {
+    console.error("addManufacturer error:", err.message);
+    return res.status(500).json({ error: "Something went wrong" });
   }
 };
 

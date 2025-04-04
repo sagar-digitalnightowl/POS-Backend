@@ -7,15 +7,12 @@ const router=express.Router();
 
 router.post(
       "/addManufacturer",
-      upload.fields([
-        { name: 'profilePhoto', maxCount: 1 },
-        { name: 'letter', maxCount: 1 }
-      ]),
+      upload.any(),
       manufacturerController.addManufacturer
     )
       .get("/getAllManufacturer",manufacturerController.getAllManufacturer)
       .get("/getManufacturer/:id",manufacturerController.getManufacturerById)
-      .patch("/updateManufacturer/:id",upload.fields([{ name: 'profilePhoto', maxCount: 1 },{ name: 'letter', maxCount: 1 }]),manufacturerController.updateManufacturerById)
+      .patch("/updateManufacturer/:id", upload.any(),manufacturerController.updateManufacturerById)
       .delete("/deleteManufacturer/:id",manufacturerController.deleteManufacturerById)
 
       export default router

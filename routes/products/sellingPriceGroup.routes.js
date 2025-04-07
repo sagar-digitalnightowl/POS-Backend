@@ -4,7 +4,7 @@ const router=express.Router();
 
 router.post("/addSellingPriceGroup",sellingPriceGroupController.addSellingPriceGroup)
       .get("/getsellingPriceGroup",sellingPriceGroupController.getAllSellingPriceGroup)
-      .get("/getsellingPriceGroup/:id",sellingPriceGroupController.deleteSellingPriceGroupById)
+      .get("/getsellingPriceGroup/:id",sellingPriceGroupController.getSellingPriceGroupById)
       .patch("/updatesellingPriceGroup/:id",sellingPriceGroupController.updateSellingPriceGroupById)
       .delete("/deleteSellingPriceGroup/:id",sellingPriceGroupController.deleteSellingPriceGroupById)
 

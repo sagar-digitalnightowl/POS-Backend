@@ -47,12 +47,13 @@ routes.getSellingPriceGroupById = async (req, res) => {
 
 routes.updateSellingPriceGroupById = async (req, res) => {
   try {
+    const sellingId = req.params.id
     const { name, description } = req.body;
     const isExistDoc = await sellingPriceGroupSchema.findOne({ name });
-    if (!isExistDoc)
+    if (isExistDoc)
       return res.status(400).json({ error: "Name is Already exist" });
     const updatedDoc = await sellingPriceGroupSchema.findByIdAndUpdate(
-      id,
+      sellingId,
       { name, description },
       { new: true }
     );
@@ -62,6 +63,7 @@ routes.updateSellingPriceGroupById = async (req, res) => {
       .status(200)
       .json({ result: updatedDoc, message: "Document update Sucessfully" });
   } catch (error) {
+    console.log("Error = ",error)
     return res.status(500).json({ error: "Something went wrong" });
   }
 };

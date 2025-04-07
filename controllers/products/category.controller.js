@@ -40,7 +40,7 @@ routes.getAllCategory = async (req, res) => {
 routes.getCategoryById = async (req, res) => {
   try {
     const categoryId = req.params.id;
-    const doc = await categorySchema.find(categoryId);
+    const doc = await categorySchema.findById(categoryId);
     if (!doc)
       return res.status(404).json({ error: "Document not found with this id" });
     return res
@@ -55,26 +55,45 @@ routes.updateCategoryById = async (req, res) => {
   try {
     const categoryId = req.params.id;
     const { name, categoryCode } = req.body;
-    const existDoc = await categorySchema.find({ $or: [{ name }, { categoryCode }] });
-    if (existDoc)
-      return res.status(400).json({ error: "Name or categoryCode already exist" });
 
-    const doc = await categorySchema.findByIdAndUpdate(
-        categoryId,
-      { name, categoryCode },
+    // Fetch existing document
+    const existingDoc = await categorySchema.findById(categoryId);
+    if (!existingDoc)
+      return res.status(404).json({ error: "Document not found with this id" });
+
+    // Check if name is being changed and already exists
+    if (name && name !== existingDoc.name) {
+      const nameExists = await categorySchema.findOne({ name });
+      if (nameExists)
+        return res.status(400).json({ error: "Name already exists" });
+    }
+
+    // Check if categoryCode is being changed and already exists
+    if (categoryCode && categoryCode !== existingDoc.categoryCode) {
+      const codeExists = await categorySchema.findOne({ categoryCode });
+      if (codeExists)
+        return res.status(400).json({ error: "Category code already exists" });
+    }
+
+    // Perform update
+    const updatedDoc = await categorySchema.findByIdAndUpdate(
+      categoryId,
+      {
+        name: name || existingDoc.name,
+        categoryCode: categoryCode || existingDoc.categoryCode,
+      },
       { new: true }
     );
 
-    if (!doc)
-      return res.status(400).json({ error: "Document not found with this id" });
-
     return res
       .status(200)
-      .json({ result: doc, message: "Document update successfully" });
+      .json({ result: updatedDoc, message: "Document updated successfully" });
   } catch (error) {
+    console.error("Update error:", error);
     return res.status(500).json({ error: "Something went wrong" });
   }
 };
+
 
 routes.deleteCategoryById=async(req,res)=>{
     try{

@@ -14,7 +14,7 @@ routes.addVariation = async (req, res) => {
       return res
         .status(400)
         .json({ error: "variationName or addVariationValue already exist " });
-    const newDoc = await variationName.create({
+    const newDoc = await variationSchema.create({
       variationName,
       addVariationValue,
     });
@@ -22,6 +22,7 @@ routes.addVariation = async (req, res) => {
       .status(201)
       .json({ result: newDoc, message: "New Doc created successfully" });
   } catch (error) {
+    console.log("error =",error)
     return res.status(500).json({ error: "Something went Wrong" });
   }
 };

@@ -62,7 +62,7 @@ routes.addProducts = async (req, res) => {
     });
   } catch (error) {
     console.error("addProducts error:", error.message);
-    return res.status(500).json({ error: "Something went wrong" });
+    return res.status(500).json({  error: error.message || "Something went wrong" });
   }
 };
 

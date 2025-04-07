@@ -18,12 +18,13 @@ const productSchema = new mongoose.Schema({
     required: true,
   },
   brand: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Brand",
     required: true,
   },
   category: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Brand",
+    ref: "Category",
     required: true,
   },
   subCategory: {
@@ -102,9 +103,9 @@ const productSchema = new mongoose.Schema({
   productUseType: {
     type: String,
   },
-  productType: {
-    type: String,
-  },
+  // productType: {
+  //   type: String,
+  // },
   productRiskClassification: {
     type: String,
   },

@@ -75,6 +75,7 @@ routes.updateVariationById = async (req, res) => {
       .status(200)
       .json({ result: doc, message: "Document update succesfully " });
   } catch (error) {
+    console.error(error);
     return res.status(500).json({ error: "Something went wrong" });
   }
 };

@@ -4,12 +4,12 @@ const variationSchema=new mongoose.Schema({
     variationName:{
          type:String,
          required:true,
-         unique:true 
+        //  unique:true 
     },
     addVariationValue:{
         type:String,
         required:true,
-        unique:true
+        // unique:true
     }     
 },{timestamps:true})
 

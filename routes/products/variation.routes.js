@@ -5,7 +5,7 @@ const router=express.Router();
 router.post("/addVariation",variationController.addVariation)
       .get("/getAllVariation",variationController.getAllVariation)
       .get("/getVariation/:id",variationController.getVariationById)
-      .patch("/updateVariation/:id",variationController.getVariationById)
+      .patch("/updateVariation/:id",variationController.updateVariationById)
       .delete("/deleteVariation/:id",variationController.deleteVariationById)
 
       export default router

@@ -5,7 +5,7 @@ router.post("/addBrand",brandController.addBrand)
       .get("/getAllBrand",brandController.getAllBrand)
       .get("/getBrand/:id",brandController.getBrandById)
       .patch("/updateBrand/:id",brandController.updateBrandById)
-      .delete("/deleteCategory/:id",brandController.deleteBrandById)
+      .delete("/deleteBrand/:id",brandController.deleteBrandById)
       
       export default router
  

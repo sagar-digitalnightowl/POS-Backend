@@ -39,7 +39,7 @@ routes.getAllBrand = async (req, res) => {
 routes.getBrandById = async (req, res) => {
   try {
     const brandId = req.params.id;
-    const doc = await brandSchema.find(brandId);
+    const doc = await brandSchema.findById(brandId);
     if (!doc)
       return res.status(404).json({ error: `Document not found with id ${brandId}` });
     return res

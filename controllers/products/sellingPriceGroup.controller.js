@@ -47,26 +47,37 @@ routes.getSellingPriceGroupById = async (req, res) => {
 
 routes.updateSellingPriceGroupById = async (req, res) => {
   try {
-    const sellingId = req.params.id
+    const sellingId = req.params.id;
     const { name, description } = req.body;
-    const isExistDoc = await sellingPriceGroupSchema.findOne({ name });
-    if (isExistDoc)
-      return res.status(400).json({ error: "Name is Already exist" });
+
+    // Fetch the existing document first
+    const existingDoc = await sellingPriceGroupSchema.findById(sellingId);
+    if (!existingDoc)
+      return res.status(404).json({ error: "Document not found with this id" });
+
+    // Check if name is being changed
+    if (name && name !== existingDoc.name) {
+      const isExistDoc = await sellingPriceGroupSchema.findOne({ name });
+      if (isExistDoc)
+        return res.status(400).json({ error: "Name is already in use" });
+    }
+
+    // Perform update
     const updatedDoc = await sellingPriceGroupSchema.findByIdAndUpdate(
       sellingId,
-      { name, description },
+      { name: name || existingDoc.name, description },
       { new: true }
     );
-    if (!updatedDoc)
-      return res.status(404).json({ error: "Document not found with this id" });
+
     return res
       .status(200)
-      .json({ result: updatedDoc, message: "Document update Sucessfully" });
+      .json({ result: updatedDoc, message: "Document updated successfully" });
   } catch (error) {
-    console.log("Error = ",error)
+    console.log("Error = ", error);
     return res.status(500).json({ error: "Something went wrong" });
   }
 };
+
 
 routes.deleteSellingPriceGroupById = async (req, res) => {
   try {

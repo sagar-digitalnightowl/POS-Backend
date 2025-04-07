@@ -39,7 +39,7 @@ routes.getAllUnit = async (req, res) => {
 routes.getUnitById = async (req, res) => {
   try {
     const unitId = req.params.id;
-    const doc = await unitSchema.find(unitId);
+    const doc = await unitSchema.findById(unitId);
     if (!doc)
       return res.status(404).json({ error: "Document not found with this id" });
     return res
@@ -54,26 +54,42 @@ routes.updateUnitById = async (req, res) => {
   try {
     const unitId = req.params.id;
     const { name, shortName } = req.body;
-    const existDoc = await unitSchema.find({ $or: [{ name }, { shortName }] });
-    if (existDoc)
-      return res.status(400).json({ error: "Name or ShortName already exist" });
 
-    const doc = await unitSchema.findByIdAndUpdate(
+    // Fetch existing document first
+    const existingDoc = await unitSchema.findById(unitId);
+    if (!existingDoc)
+      return res.status(404).json({ error: "Document not found with this id" });
+
+    // Check if name is being changed and already exists elsewhere
+    if (name && name !== existingDoc.name) {
+      const nameExists = await unitSchema.findOne({ name });
+      if (nameExists)
+        return res.status(400).json({ error: "Name already exists" });
+    }
+
+    // Check if shortName is being changed and already exists elsewhere
+    if (shortName && shortName !== existingDoc.shortName) {
+      const shortNameExists = await unitSchema.findOne({ shortName });
+      if (shortNameExists)
+        return res.status(400).json({ error: "Short Name already exists" });
+    }
+
+    // Perform the update
+    const updatedDoc = await unitSchema.findByIdAndUpdate(
       unitId,
-      { name, shortName },
+      { name: name || existingDoc.name, shortName: shortName || existingDoc.shortName },
       { new: true }
     );
 
-    if (!doc)
-      return res.status(400).json({ error: "Document not found with this id" });
-
     return res
       .status(200)
-      .json({ result: doc, message: "Document update successfully" });
+      .json({ result: updatedDoc, message: "Document updated successfully" });
   } catch (error) {
+    console.error("Update error:", error);
     return res.status(500).json({ error: "Something went wrong" });
   }
 };
+
 
 routes.deleteUnitById=async(req,res)=>{
     try{

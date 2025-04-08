@@ -37,7 +37,7 @@ routes.getAllProductMapping = async (req, res) => {
 routes.getProductMappingById = async (req, res) => {
   try {
     const productMappingId = req.params.id;
-    const doc = await productMappingSchema.find(productMappingId);
+    const doc = await productMappingSchema.findById(productMappingId);
 
     if (!doc)
       return res.status(404).json({ error: "Document not found with this id" });

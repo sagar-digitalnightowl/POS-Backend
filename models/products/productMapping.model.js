@@ -1,7 +1,3 @@
-
-
-
-
 import mongoose, { Schema } from "mongoose";
 
 const productMappingSchema=new Schema({

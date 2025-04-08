@@ -9,7 +9,7 @@ router
   .post("/addProduct",upload.any(), listProductController.addProducts)
   .get("/getAllProduct",listProductController.getAllProduct)
   .get("/getProduct/:id",listProductController.getProductById)
-  .patch("/updateProduct/:id",listProductController.updateProductById)
+  .patch("/updateProduct/:id",upload.any(),listProductController.updateProductById)
   .post("/importProducts",upload.single("file"),listProductController.importProducts)
   .delete("/deleteProduct/:id",listProductController.deleteProductById);
                                                                                                 

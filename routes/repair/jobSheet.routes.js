@@ -7,7 +7,7 @@ const router=express.Router()
 router.post("/addJobSheet",upload.single("document"),jobSheetController.addJobSheet)
       .get("/getAllJobSheet",jobSheetController.getAllJobSheet)
       .get("/getJobSheet/:id",jobSheetController.getJobSheetById)
-      .patch("/updateJobSheet/:id",jobSheetController.updateJobSheetById)
+      .patch("/updateJobSheet/:id",upload.single("document"),jobSheetController.updateJobSheetById)
       .delete("/deleteCategory/:id",jobSheetController.deleteJobSheetById)
       
 export default router

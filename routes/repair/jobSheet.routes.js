@@ -1,14 +1,14 @@
 import express from "express"
 import jobSheetController from "../../controllers/repair/jobSheet.controller.js"
-import multer from "multer" 
-const router=express.Router()
-const upload=multer()
+import { upload } from "../../middlewares/multer.middleware.js";
 
-router.post("/addJobSheet",upload.any(),jobSheetController.addJobSheet)
+const router=express.Router()
+
+router.post("/addJobSheet",upload.single("document"),jobSheetController.addJobSheet)
       .get("/getAllJobSheet",jobSheetController.getAllJobSheet)
       .get("/getJobSheet/:id",jobSheetController.getJobSheetById)
       .patch("/updateJobSheet/:id",jobSheetController.updateJobSheetById)
       .delete("/deleteCategory/:id",jobSheetController.deleteJobSheetById)
       
-      export default router
+export default router
  

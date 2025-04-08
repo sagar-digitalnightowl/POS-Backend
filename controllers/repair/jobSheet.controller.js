@@ -1,26 +1,42 @@
 import jobSheetSchema from "../../models/repair/jobSheet.model.js"
 import { jobSheetValidation } from "../../validations/joi.validations.js";
-// import { v4 as uuidv4 } from 'uuid';
-// import { uploadFile } from "../../utils/s3.js";
+import { uploadFile, deleteFile  } from "../../utils/s3.js";
 
 const routes = {};
 
 routes.addJobSheet = async (req, res) => {
   try {
-    const {error}=jobSheetValidation.validate(req.body)
-   if(error)
-        return res.status(400).json({error:error.details[0].message})
+    // ✅ Validate request body (excluding the file for now)
+    const { error } = jobSheetValidation.validate(req.body);
+    if (error)
+      return res.status(400).json({ error: error.details[0].message });
 
-   
-    const newDoc = await jobSheetSchema.create(req.body);
+    // ✅ Handle file upload
+    if (!req.file) {
+      return res.status(400).json({ error: "Document file is required." });
+    }
+
+    const file = req.file;
+    const timestamp = Date.now(); // avoid file name collision
+    const fileName = `${timestamp}-${file.originalname}`;
+
+    const uploadResult = await uploadFile(file.buffer, fileName, file.mimetype);
+
+    // ✅ Add the uploaded file URL to req.body before saving
+    const newDoc = await jobSheetSchema.create({
+      ...req.body,
+      document: uploadResult.Location,
+    });
+
     return res
       .status(201)
-      .json({ result: newDoc, message: "New Document is created" });
+      .json({ result: newDoc, message: "New Job Sheet created." });
   } catch (error) {
-    console.log(error)
-    return res.status(500).json({ error: "Something went wrong" });
+    console.log("Error in addJobSheet:", error);
+    return res.status(500).json({ error: "Something went wrong." });
   }
 };
+
 
 routes.getAllJobSheet = async (req, res) => {
   try {

@@ -14,7 +14,7 @@ routes.addWarranty = async (req, res) => {
       return res
         .status(400)
         .json({ error: "Name is already exist " });
-    const newDoc = await variationName.create({
+    const newDoc = await warrantySchema.create({
       name,
       description,
       duration
@@ -24,6 +24,7 @@ routes.addWarranty = async (req, res) => {
       .status(201)
       .json({ result: newDoc, message: "New Doc created successfully" });
   } catch (error) {
+    console.log("Error =", error)
     return res.status(500).json({ error: "Something went Wrong" });
   }
 };

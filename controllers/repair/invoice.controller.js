@@ -35,7 +35,7 @@ routes.getAllInvoice = async (req, res) => {
   }
 };
 
-routes.getJobSheetById = async (req, res) => {
+routes.getInvoiceById = async (req, res) => {
   try {
     const jobSheetId = req.params.id;
     const doc = await invoiceSchema.find(jobSheetId);
@@ -49,12 +49,12 @@ routes.getJobSheetById = async (req, res) => {
   }
 };
 
-routes.updateJobSheetById = async (req, res) => {
+routes.updateInvoiceById = async (req, res) => {
   try {
     const jobSheetId = req.params.id;
    
     const doc = await invoiceSchema.findByIdAndUpdate(
-        brandId,
+      jobSheetId,
         req.body,
       { new: true }
     );
@@ -69,7 +69,7 @@ routes.updateJobSheetById = async (req, res) => {
   }
 };
 
-routes.deleteJobSheetById=async(req,res)=>{
+routes.deleteInvoiceById=async(req,res)=>{
     try{
      const jobSheetId=req.params.id;
      const doc=await invoiceSchema.findByIdAndDelete(jobSheetId);

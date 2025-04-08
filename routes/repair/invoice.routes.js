@@ -6,9 +6,9 @@ const uploads=multer()
 
 router.post("/addInvoice",uploads.any(),invoiceController.addInvoice)
       .get("/getAllInvoice",invoiceController.getAllInvoice)
-      .get("/getJobSheet/:id",invoiceController.getJobSheetById)
-      .patch("/updateJobSheet/:id",invoiceController.updateJobSheetById)
-      .delete("/deleteJobSheet/:id",invoiceController.deleteJobSheetById)
+      .get("/getInvoice/:id",invoiceController.getInvoiceById)
+      .patch("/updateInvoice/:id",invoiceController.updateInvoiceById)
+      .delete("/deleteInvoice/:id",invoiceController.deleteInvoiceById)
 
 
 export default router

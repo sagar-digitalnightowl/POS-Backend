@@ -2,9 +2,8 @@ import mongoose, { Schema } from "mongoose";
 
 const productMappingSchema=new Schema({
         accountName:{
-            type:mongoose.Types.ObjectId,
-            ref:"CustomerAndSupplier",
-             required:true,
+            type:String,
+            required:true,
         },
         representativeName:{
             type:String,

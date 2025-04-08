@@ -112,10 +112,7 @@ export const variationValidation = joi.object({
 });
 
 export const productMappingValidation = joi.object({
-  accountName: joi
-    .string()
-    .custom(objectIdValidation, "ObjectId validation")
-    .required(),
+    accountName: joi.string().required(),
     representativeName:joi.string().required(),
     itemDescription:joi.string().required(),
     mappedPercentage:joi.number().min(0).max(100).required(),

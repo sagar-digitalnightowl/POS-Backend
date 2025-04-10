@@ -137,7 +137,7 @@ export const jobSheetValidation=joi.object({
   status:joi.string(),
   expectedDeliveryDate:joi.date().required(),
   document:joi.string(),
-  sendNotification:joi.array().items(joi.string().valid("Sms","Email")).min(1).required(),
+  sendNotification:joi.string().valid("Sms","Email").required(),
   customField1:joi.string(),
   customField2:joi.string(),
   customField3:joi.string(),

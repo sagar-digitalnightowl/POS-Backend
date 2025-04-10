@@ -67,7 +67,7 @@ const jobsheetSchema = new Schema({
       required:true
   },
   sendNotification:{
-        type:[String],
+        type:String,
         enum:["Sms","Email"],
         required:true  
   },

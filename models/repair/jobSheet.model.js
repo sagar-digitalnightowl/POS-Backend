@@ -24,7 +24,7 @@ const jobsheetSchema = new Schema({
      ref:"Brand",
     required:true
   },
-  deviceName:{
+  device:{
      type:mongoose.Types.ObjectId,
      ref:"Product",
      required:true,  

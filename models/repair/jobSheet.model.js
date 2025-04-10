@@ -56,6 +56,7 @@ const jobsheetSchema = new Schema({
   },
   status:{
     type:String,
+    enum:["Pending","Completed"]
   },
   expectedDeliveryDate:{
       type:Date,

@@ -91,6 +91,9 @@ const productSchema = new mongoose.Schema({
   productModel: {
     type: String,
   },
+  deviceName:{
+    type: String,
+  },
   productSerialNo: {
     type: String,
   },

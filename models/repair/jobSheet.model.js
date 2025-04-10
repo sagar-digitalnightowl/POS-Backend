@@ -24,12 +24,14 @@ const jobsheetSchema = new Schema({
      ref:"Brand",
     required:true
   },
-  device:{
-     type:String,
+  deviceName:{
+     type:mongoose.Types.ObjectId,
+     ref:"Product",
      required:true,  
     },
     deviceModel:{
-      type:String,
+      type:mongoose.Types.ObjectId,
+      ref:"Product",
       required:true   
     },
     serialNumber:{

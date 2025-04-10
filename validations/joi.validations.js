@@ -76,6 +76,7 @@ export const productValidation = joi.object({
   supplier: joi.string().required(),
   manageStock: joi.boolean(),
   alertQuantity: joi.number().required(),
+  deviceName: joi.string().required(),
   deviceModel: joi.string().required(),
   productDescription: joi.string(),
   productImage: joi.string(),

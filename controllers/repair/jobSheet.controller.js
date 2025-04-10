@@ -41,9 +41,9 @@ routes.addJobSheet = async (req, res) => {
 
 routes.getAllJobSheet = async (req, res) => {
   try {
-    const { limit = 10, page = 1,businessLocation,customer,status } = req.query;
+    const { limit = 10, page = 1} = req.query;
     const allDoc = await jobSheetSchema
-      .find({businessLocation,customer,status})
+      .find()
       .skip(limit * (page - 1))
       .limit(limit);
     return res

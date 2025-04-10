@@ -68,6 +68,7 @@ export const productValidation = joi.object({
   barcodeType: joi.string().required(),
   unit: joi.string().required(),
   brand: joi.string().required(),
+  batchNo:joi.string(),
   category: joi.string().custom(objectIdValidation,"ObjectId validation").required(),
   subCategory: joi.string().required(),
   businessLocations: joi.string().required(),

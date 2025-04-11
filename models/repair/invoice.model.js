@@ -33,7 +33,8 @@ const invoiceSchema=new Schema({
             required:true
         },
         deviceModel:{
-            type:String,
+            type:mongoose.Types.ObjectId,
+            ref:"Product",
             required:true
         },
         serialNumber:{

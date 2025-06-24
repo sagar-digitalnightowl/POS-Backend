@@ -5,7 +5,7 @@ const departmentSchema = new Schema({
         type:String,
         required:true
     },
-    departmentID:{
+    departmentId:{
         type:String,
         required:true
     },

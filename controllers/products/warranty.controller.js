@@ -4,7 +4,7 @@ const routes = {};
 
 routes.addWarranty = async (req, res) => {
   try {
-    const { name, description,duration } = req.body;
+    const { name, description, duration } = req.body;
     if(!name&&!description&&!duration)
            return res.status(400).json({error:"All fields are required"})
 
@@ -32,13 +32,16 @@ routes.addWarranty = async (req, res) => {
 routes.getAllWarranty = async (req, res) => {
   try {
     const { limit = 10, page = 1 } = req.query;
+    const allWarranty = await warrantySchema.countDocuments();
+    const totalPage = Math.ceil(allWarranty/limit);
+
     const allDoc = await warrantySchema
       .find()
       .skip(limit * (page - 1))
       .limit(limit);
     return res
       .status(200)
-      .json({ result: allDoc, message: "All Document fetched suceesFully" });
+      .json({ result: allDoc, totalPage, message: "All Document fetched suceesFully" });
   } catch (error) {
     return res.status(500).json({ error: "Something went wrong" });
   }

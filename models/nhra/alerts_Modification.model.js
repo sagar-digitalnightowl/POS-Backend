@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose'
+import { validate } from 'uuid';
 
 const alert_ModificationSchema = new Schema({
     applicantName:{
@@ -21,53 +22,21 @@ const alert_ModificationSchema = new Schema({
         type:Date,
         default:Date.now
     },
-    deviceName:{
+    device:{
         type:Schema.Types.ObjectId,
         ref:'Product'
     },
-    modelNumber:{
-        type:String
-    },
-    gmdnCode:{
-        type:String
-    },
-    serialNumber:{
-        type:String
-    },
-    hsCode:{
-        type:String
-    },
-    batchNumber:{
-        type:String
-    },
 
-    authorizedRepresentativeName:{
+    authorizedRepresentative:{
         type:Schema.Types.ObjectId,
         ref:'AuthorizedRepresentative'
     },
-    mobileNumber:{
-        type:Number
-    },
-    authorizedRepresentativeEmail:{
-        type:String
-    },
-    authorizedRepresentativeLicense:{
-        type:String
-    },
-
-    manufacturerName:{
+    
+    manufacturer:{
         type:Schema.Types.ObjectId,
         ref:'Manufacturer'
     },
-    contactPersonNumber:{
-        type:Number
-    },
-    manufacturerEmail:{
-        type:String
-    },
-    countryOfOrigin:{
-        type:String
-    },
+
 
     alertRiskClassification:{
         type:String,
@@ -116,7 +85,10 @@ const alert_ModificationSchema = new Schema({
             "Death",
             "Serious",
             "Minor"
-        ]
+        ],
+        required: function () {
+            return this.wasAnyoneInjured === "Yes"
+        } 
     },
     nhraReportingStatus:{
         type:String,
@@ -167,6 +139,8 @@ const alert_ModificationSchema = new Schema({
     modificationDescription:{
         type:String
     },
+
+    // file 
     modificationDocument:{
         type:String
     }

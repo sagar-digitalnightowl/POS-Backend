@@ -1,16 +1,36 @@
-import express from 'express'
-import authorizedRepresentativeController from '../../controllers/nhra/authorizedRepresentative.controller.js'
-import multer from "multer"
+import express from "express";
+import authorizedRepresentativeController from "../../controllers/nhra/authorizedRepresentative.controller.js";
+import multer from "multer";
+import { upload } from "../../middlewares/multer.middleware.js";
 
-const upload=multer()
+const router = express.Router();
 
-const router=express.Router();
+router
+  .post(
+    "/addAuthorizedRepresentative",
+    upload.fields([{ name: "authorizedCertificate", maxCount: 1 }]),
+    authorizedRepresentativeController.addAuthorizedRepresentative
+  )
+  .get(
+    "/getAllAuthorizedRepresentative",
+    authorizedRepresentativeController.getAllAuthorizedRepresentative
+  )
+  .get(
+    "/getAuthorizedRepresentatives",
+    authorizedRepresentativeController.getAuthorizedRepresentatives
+  )
+  .get(
+    "/getAuthorizedRepresentative/:id",
+    authorizedRepresentativeController.getAuthorizedRepresentativeById
+  )
+  .patch(
+    "/updateAuthorizedRepresentative/:id",
+    upload.fields([{ name: "authorizedCertificate", maxCount: 1 }]),
+    authorizedRepresentativeController.updateAuthorizedRepresentativeById
+  )
+  .delete(
+    "/deleteAuthorizedRepresentative/:id",
+    authorizedRepresentativeController.deleteAuthorizedRepresentativeById
+  );
 
-router.post('/addAuthorizedRepresentative',upload.single("authorizedCertificate"),authorizedRepresentativeController.addAuthorizedRepresentative)
-      .get("/getAllAuthorizedRepresentative",authorizedRepresentativeController.getAllAuthorizedRepresentative)
-      .get("/getAuthorizedRepresentative/:id",authorizedRepresentativeController.getAuthorizedRepresentativeById)
-      .patch("/updateAuthorizedRepresentative/:id",authorizedRepresentativeController.updateAuthorizedRepresentativeById)
-      .delete("/deleteAuthorizedRepresentative/:id",authorizedRepresentativeController.deleteAuthorizedRepresentativeById)
-      
-      
 export default router;

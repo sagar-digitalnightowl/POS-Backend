@@ -9,11 +9,29 @@ routes.addManufacturer = async (req, res) => {
     console.log("Received Data:", req.body);
 
     // ✅ Validate request body
-    const { name, email, address, phoneNumber } = req.body;
-    const { error } = manufacturerValidation.validate({ name, email, address, phoneNumber });
+    const {
+      name,
+      address,
+      telephone,
+      fax,
+      phoneNumber,
+      email,
+      website,
+      city,
+      country,
+    } = req.body;
+
+    const { error } = manufacturerValidation.validate({
+      name,
+      email,
+      address,
+      phoneNumber,
+    });
 
     if (error) {
-      return res.status(400).json({ error: error.details[0].message, details: error.details });
+      return res
+        .status(400)
+        .json({ error: error.details[0].message, details: error.details });
     }
 
     // ✅ Check for email existence
@@ -23,38 +41,43 @@ routes.addManufacturer = async (req, res) => {
     }
 
     let profilePhotoUrl = "";
-let letterUrl = "";
+    let letterUrl = "";
 
-if (req.files && req.files.length > 0) {
-  for (const file of req.files) {
-    if (file.fieldname === "profilePhoto") {
-      console.log("Uploading profile photo...");
-      const profilePhotoData = await uploadFile(
-        file.buffer,
-        `manufacturers/${Date.now()}_profile.jpg`,
-        file.mimetype
-      );
-      profilePhotoUrl = profilePhotoData.Location;
-    }
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        if (file.fieldname === "profilePhoto") {
+          console.log("Uploading profile photo...");
+          const profilePhotoData = await uploadFile(
+            file.buffer,
+            `manufacturers/${Date.now()}_profile.jpg`,
+            file.mimetype
+          );
+          profilePhotoUrl = profilePhotoData.Location;
+        }
 
-    if (file.fieldname === "letter") {
-      console.log("Uploading letter...");
-      const letterData = await uploadFile(
-        file.buffer,
-        `manufacturers/${Date.now()}_letter.pdf`,
-        file.mimetype
-      );
-      letterUrl = letterData.Location;
+        if (file.fieldname === "letter") {
+          console.log("Uploading letter...");
+          const letterData = await uploadFile(
+            file.buffer,
+            `manufacturers/${Date.now()}_letter.pdf`,
+            file.mimetype
+          );
+          letterUrl = letterData.Location;
+        }
+      }
     }
-  }
-}
 
     // ✅ Create manufacturer entry
     const newDoc = await manufacturerSchema.create({
       name,
-      email,
       address,
+      telephone,
+      fax,
       phoneNumber,
+      email,
+      website,
+      city,
+      country,
       profilePhotoUrl,
       letterUrl,
     });
@@ -63,28 +86,46 @@ if (req.files && req.files.length > 0) {
       result: newDoc,
       message: "Manufacturer created successfully",
     });
-
   } catch (error) {
     console.error("Server error:", error);
     return res.status(500).json({
       error: "Internal server error",
-      details: process.env.NODE_ENV === "development" ? error.message : undefined,
+      details:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
 
-
-
 routes.getAllManufacturer = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
+    const totalData = await manufacturerSchema.countDocuments();
+    const totalPage = Math.ceil(totalData / limit);
     const allDoc = await manufacturerSchema
       .find()
       .skip(limit * (page - 1))
       .limit(limit);
-    return res
-      .status(200)
-      .json({ result: allDoc, message: "All Data fetched Successfully" });
+    return res.status(200).json({
+      result: allDoc,
+      message: "All Data fetched Successfully",
+      totalPage,
+    });
+  } catch (error) {
+    console.log("Error", error.message);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+routes.getManufacturers = async (req, res) => {
+  try {
+    const allDoc = await manufacturerSchema
+      .find()
+      .select("_id name phoneNumber email country")
+      .sort({ createdAt: -1 });
+    return res.status(200).json({
+      result: allDoc,
+      message: "All Data fetched Successfully",
+    });
   } catch (error) {
     console.log("Error", error.message);
     return res.status(500).json({ error: "Something went wrong" });
@@ -108,12 +149,30 @@ routes.getManufacturerById = async (req, res) => {
 routes.updateManufacturerById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, address, phoneNumber } = req.body;
+
+    const {
+      name,
+      address,
+      telephone,
+      fax,
+      phoneNumber,
+      email,
+      website,
+      city,
+      country,
+    } = req.body;
 
     // ✅ Validate request body
-    const { error } = manufacturerValidation.validate({ name, email, address, phoneNumber });
+    const { error } = manufacturerValidation.validate({
+      name,
+      email,
+      address,
+      phoneNumber,
+    });
     if (error) {
-      return res.status(400).json({ error: error.details[0].message, details: error.details });
+      return res
+        .status(400)
+        .json({ error: error.details[0].message, details: error.details });
     }
 
     // ✅ Find existing manufacturer
@@ -124,7 +183,10 @@ routes.updateManufacturerById = async (req, res) => {
 
     // ✅ Check for email existence (excluding current record)
     if (email !== existingManufacturer.email) {
-      const isEmailExists = await manufacturerSchema.findOne({ email, _id: { $ne: id } });
+      const isEmailExists = await manufacturerSchema.findOne({
+        email,
+        _id: { $ne: id },
+      });
       if (isEmailExists) {
         return res.status(400).json({ error: "Email already exists" });
       }
@@ -136,13 +198,13 @@ routes.updateManufacturerById = async (req, res) => {
     // ✅ Process profile photo update
     if (req.files?.profilePhoto) {
       console.log("Updating profile photo...");
-      
+
       // Delete old profile photo if exists
       if (profilePhotoUrl) {
-        const oldProfileKey = profilePhotoUrl.split('/').pop();
+        const oldProfileKey = profilePhotoUrl.split("/").pop();
         await deleteFile(`manufacturers/${oldProfileKey}`);
       }
-      
+
       // Upload new profile photo
       const profileBuffer = req.files.profilePhoto[0].buffer;
       const profileMimeType = req.files.profilePhoto[0].mimetype;
@@ -157,13 +219,13 @@ routes.updateManufacturerById = async (req, res) => {
     // ✅ Process letter update
     if (req.files?.letter) {
       console.log("Updating letter...");
-      
+
       // Delete old letter if exists
       if (letterUrl) {
-        const oldLetterKey = letterUrl.split('/').pop();
+        const oldLetterKey = letterUrl.split("/").pop();
         await deleteFile(`manufacturers/${oldLetterKey}`);
       }
-      
+
       // Upload new letter
       const letterBuffer = req.files.letter[0].buffer;
       const letterMimeType = req.files.letter[0].mimetype;
@@ -180,9 +242,14 @@ routes.updateManufacturerById = async (req, res) => {
       id,
       {
         name,
-        email,
         address,
+        telephone,
+        fax,
         phoneNumber,
+        email,
+        website,
+        city,
+        country,
         profilePhotoUrl,
         letterUrl,
       },
@@ -193,16 +260,15 @@ routes.updateManufacturerById = async (req, res) => {
       result: updatedDoc,
       message: "Manufacturer updated successfully",
     });
-
   } catch (error) {
     console.error("Server error:", error);
     return res.status(500).json({
       error: "Internal server error",
-      details: process.env.NODE_ENV === "development" ? error.message : undefined,
+      details:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
-
 
 routes.deleteManufacturerById = async (req, res) => {
   try {
@@ -216,13 +282,13 @@ routes.deleteManufacturerById = async (req, res) => {
 
     // ✅ Delete associated files from S3 if they exist
     if (manufacturer.profilePhotoUrl) {
-      const profilePhotoKey = manufacturer.profilePhotoUrl.split('/').pop();
+      const profilePhotoKey = manufacturer.profilePhotoUrl.split("/").pop();
       await deleteFile(`manufacturers/${profilePhotoKey}`);
       console.log("Deleted profile photo from S3");
     }
 
     if (manufacturer.letterUrl) {
-      const letterKey = manufacturer.letterUrl.split('/').pop();
+      const letterKey = manufacturer.letterUrl.split("/").pop();
       await deleteFile(`manufacturers/${letterKey}`);
       console.log("Deleted letter from S3");
     }
@@ -235,19 +301,17 @@ routes.deleteManufacturerById = async (req, res) => {
       deletedManufacturer: {
         id,
         name: manufacturer.name,
-        email: manufacturer.email
-      }
+        email: manufacturer.email,
+      },
     });
-
   } catch (error) {
     console.error("Server error:", error);
     return res.status(500).json({
       error: "Internal server error",
-      details: process.env.NODE_ENV === "development" ? error.message : undefined,
+      details:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
 
-
-
-export default routes
+export default routes;

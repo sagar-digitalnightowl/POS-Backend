@@ -5,7 +5,7 @@ const routes = {};
 routes.addCategory = async (req, res) => {
   try {
     const { name, categoryCode, description } = req.body;
-    if (!name && !categoryCode&&!description)
+    if (!name && !categoryCode && !description)
       return res.status(400).json({ error: "All field is required " });
 
     const existDoc = await categorySchema.find({ $or: [{ name }, { categoryCode }] });
@@ -18,17 +18,37 @@ routes.addCategory = async (req, res) => {
       .status(201)
       .json({ result: newDoc, message: "New Document is created" });
   } catch (error) {
+
+    console.log(error)
     return res.status(500).json({ error: "Something went wrong" });
   }
 };
 
+
 routes.getAllCategory = async (req, res) => {
   try {
     const { limit = 10, page = 1 } = req.query;
+
+    const totalItem = await categorySchema.countDocuments();
+    const totalPage = Math.ceil(totalItem/limit);
     const allDoc = await categorySchema
       .find()
       .skip(limit * (page - 1))
       .limit(limit);
+    return res
+      .status(200)
+      .json({ result: allDoc, totalPage, message: "Document fetched successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+routes.getCategories = async (req, res) => {
+  try {
+    const allDoc = await categorySchema
+      .find()
+      .select("_id name categoryCode")
+      .sort({createdAt: -1})
     return res
       .status(200)
       .json({ result: allDoc, message: "Document fetched successfully" });
@@ -54,7 +74,7 @@ routes.getCategoryById = async (req, res) => {
 routes.updateCategoryById = async (req, res) => {
   try {
     const categoryId = req.params.id;
-    const { name, categoryCode } = req.body;
+    const { name, categoryCode, description } = req.body;
 
     // Fetch existing document
     const existingDoc = await categorySchema.findById(categoryId);
@@ -81,6 +101,7 @@ routes.updateCategoryById = async (req, res) => {
       {
         name: name || existingDoc.name,
         categoryCode: categoryCode || existingDoc.categoryCode,
+        description: description || existingDoc.description,
       },
       { new: true }
     );

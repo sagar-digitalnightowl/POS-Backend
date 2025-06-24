@@ -3,16 +3,18 @@ const routes = {};
 
 routes.addBrand = async (req, res) => {
   try {
-    const { name, shortDescription,useForRepair } = req.body;
+    const { name, shortDescription, useForRepair } = req.body;
     if (!name && !shortDescription)
       return res.status(400).json({ error: "All field is required " });
 
-    const existDoc = await brandSchema.findOne({name});
+    const existDoc = await brandSchema.findOne({ name });
     if (existDoc)
       return res
         .status(400)
-        .json({ error: "Name or shortDescription is already exist" });
+        .json({ error: "Brand name is already exist" });
+
     const newDoc = await brandSchema.create({ name, shortDescription, useForRepair });
+
     return res
       .status(201)
       .json({ result: newDoc, message: "New Document is created" });
@@ -24,10 +26,34 @@ routes.addBrand = async (req, res) => {
 routes.getAllBrand = async (req, res) => {
   try {
     const { limit = 10, page = 1 } = req.query;
+
+    const totalBrands = await brandSchema.countDocuments();
+    const totalPage = Math.ceil(totalBrands/limit);
     const allDoc = await brandSchema
       .find()
       .skip(limit * (page - 1))
       .limit(limit);
+    return res
+      .status(200)
+      .json({ result: allDoc, totalPage, message: "Document fetched successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+routes.getBrands = async (req, res) => {
+  try {
+    const {useForRepair} = req.query;
+
+    const filter = {}
+    if(useForRepair){
+      filter.useForRepair = true
+    }
+
+    const allDoc = await brandSchema
+      .find(filter)
+      .select("_id name")
+      .sort({createdAt : -1})
     return res
       .status(200)
       .json({ result: allDoc, message: "Document fetched successfully" });
@@ -53,13 +79,13 @@ routes.getBrandById = async (req, res) => {
 routes.updateBrandById = async (req, res) => {
   try {
     const brandId = req.params.id;
-    const { name,shortDescription} = req.body;
-    const existDoc = await brandSchema.findOne({ name });
+    const { name, shortDescription } = req.body;
+    const existDoc = await brandSchema.findOne({ name, _id : { $ne: brandId } });
     if (existDoc)
-      return res.status(400).json({ error: "Name or categoryCode already exist" });
+      return res.status(400).json({ error: "Brand name already exist" });
 
     const doc = await brandSchema.findByIdAndUpdate(
-        brandId,
+      brandId,
       { name, shortDescription },
       { new: true }
     );
@@ -75,16 +101,16 @@ routes.updateBrandById = async (req, res) => {
   }
 };
 
-routes.deleteBrandById=async(req,res)=>{
-    try{
-     const brandId=req.params.id;
-     const doc=await brandSchema.findByIdAndDelete(brandId);
-     if(!doc)
-         return res.status(404).json({error:"Document not found with this id"})
-      return res.status(200).json({result:doc,message:"Document deleted successfully"})  
-    }catch(error){
-        return res.status(500).json({error:"Something went wrong"});
-    }
+routes.deleteBrandById = async (req, res) => {
+  try {
+    const brandId = req.params.id;
+    const doc = await brandSchema.findByIdAndDelete(brandId);
+    if (!doc)
+      return res.status(404).json({ error: "Document not found with this id" })
+    return res.status(200).json({ result: doc, message: "Document deleted successfully" })
+  } catch (error) {
+    return res.status(500).json({ error: "Something went wrong" });
+  }
 }
 
 

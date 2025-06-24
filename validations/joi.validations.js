@@ -3,7 +3,11 @@ import mongoose from "mongoose";
 
 export const customerAndSupplierValidation = joi.object({
   contactId: joi.string(),
-  businessName:joi.string(),
+  businessName: joi.string().allow("").when("business", {
+    is: true,
+    then: joi.required(),
+    otherwise: joi.optional(),
+  }),
   contactType: joi.string().valid("supplier","customer").required(),
   individual: joi.boolean(),
   business: joi.boolean(),
@@ -131,6 +135,8 @@ export const jobSheetValidation=joi.object({
   deviceModel:joi.string().required(),
   serialNumber:joi.string().required(),
   passwordOrPatternLock:joi.string().required(),
+  productConfiguration: joi.string().required(),
+  problemReportedByTheCustomer: joi.string().required(),
   conditionOfTheProduct:joi.string().required(),
   commentByTechnician:joi.string(),
   estimatedCost:joi.number().min(1).required(),
@@ -163,22 +169,38 @@ export const purchaseValidation=joi.object({
   referenceNo:joi.string().optional(),
   purchaseDate:joi.date().required(),
   purchaseStatus: joi.string().valid("Received", "Pending", "Ordered").required(),
-  businessLocation:joi.string().custom(objectIdValidation,"ObjectId validation").required(),
-  payTerm: joi.object({
-    duration: joi.number().min(1).optional(),
-    termType: joi.string().valid("Days", "Months").optional(),
-  }).optional(),
+  businessLocation:joi.string().required(),
+  // payTerm: joi.object({
+  //   value: joi.number().min(1).optional(),
+  //   unit: joi.string().valid("Days", "Months").optional(),
+  // }).optional(),
+  payTerm: joi.string().optional(),
   attachDocument:joi.string().optional(),
+  // products: joi.array().items(
+  //   joi.object({
+  //     product: joi.string().custom(objectIdValidation, 'ObjectId validation').optional(),
+  //     quantity: joi.string().optional(),
+  //     discountPercent: joi.string().min(0).max(100).optional(),
+  //     taxPercent: joi.string().min(0).max(100).optional(),
+  //     unitSellingPrice: joi.string().optional(),
+  //     totalAmount: joi.string().optional()
+  //   })
+  // ),
+  products: joi.string().optional(),
   discountType: joi.string().valid("None", "Fixed", "Percentage").optional(),
   discountAmount:joi.number().optional(),
   purchaseTax:joi.string().optional(),
   additionalNotes:joi.string().optional(),
   shippingDetails:joi.string().optional(),
   additionalShippingcharges:joi.number().optional(),
-  amount: joi.number().min(0).required(),
-  paidOn: joi.date().required(),
-  paymentMethod:joi.string().required(),
-  paymentNote:joi.string().optional()
+  // additionalExpenses: joi.array().items(
+  //   joi.object({
+  //     name: joi.string().optional(),
+  //     amount: joi.string().optional()
+  //   })
+  // ),
+  additionalExpenses: joi.string().optional(),
+  payments: joi.string().optional(),
 })
 
 

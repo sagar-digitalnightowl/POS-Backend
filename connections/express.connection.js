@@ -6,18 +6,29 @@ import adminRoutes from "../routes/index.js";
 import bodyParser from "body-parser";
 config();
 
+// cron jobs 
+import '../cronJobs/index.js';
+
+
+
 const app = express();
 
 const PORT = process.env.PORT || 1000;
 
 
-
-
+const clientUrls = process.env.CLIENT_URLS;
+const allowedOrigins = clientUrls.split(",");
 app.use(
   cors({
-    origin: "*", // Specify your exact frontend origin
-    credentials: true, // Allow credentials
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"], // Allowed methods
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   })
 );
 

@@ -5,7 +5,6 @@ const routes = {};
 
 routes.addUser = async (req, res) => {
   try {
-
     const {
       prefix,
       email,
@@ -123,25 +122,65 @@ routes.addUser = async (req, res) => {
       .status(201)
       .json({ result: newUser, message: "User Created Successfully" });
   } catch (error) {
-    console.log("error=",error)
+    console.log("error=", error);
     res.status(500).json({ error: "Something went wrong" });
   }
 };
 
-
-
 routes.getAllUser = async (req, res) => {
   try {
-    const users = await userModel.find().populate("userProfile", { role: 1 });
+    const { page = 1, limit = 10 } = req.query;
+
+    const allUsers = await userModel.countDocuments();
+    const totalPage = Math.ceil(allUsers / limit);
+
+    const users = await userModel
+      .find()
+      .populate({
+        path: "userProfile",
+        select: "role",
+        populate: {
+          path: "role",
+          select: "roleName",
+        },
+      })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
     if (!users) return res.status(404).json({ error: "Users not found" });
-    return res
-      .status(200)
-      .json({ result: users, message: "Users Retrieved Successfully" });
+    return res.status(200).json({
+      result: users,
+      totalPage,
+      message: "Users Retrieved Successfully",
+    });
   } catch (error) {
-    console.log("error=",error.message)
-        res.status(500).json({ error: "Something went wrong" });
+    console.log("error=", error.message);
+    res.status(500).json({ error: "Something went wrong" });
   }
 };
+
+routes.getUsers = async (req, res) => {
+  try {
+    const users = await userModel.find().populate({
+      path: "userProfile",
+      select: "role",
+      populate: {
+        path: "role",
+        select: "roleName",
+      },
+    });
+
+    if (!users) return res.status(404).json({ error: "Users not found" });
+    return res.status(200).json({
+      result: users,
+      message: "Users Retrieved Successfully",
+    });
+  } catch (error) {
+    console.log("error=", error.message);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
 routes.getUserById = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -163,11 +202,20 @@ routes.updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
     if (!userId) return res.status(400).json({ error: "User Id is required" });
-    const user = await userModel.findByIdAndUpdate(userId, req.body,{new:true});
+    const user = await userModel.findById(userId);
+
     if (!user)
-      return res
-        .status(404)
-        .json({ error: `User not found with id:${userId}` });
+      return res.status(404).json({
+        error: `User not found with id:${userId}`,
+      });
+    await userProfileModel.findByIdAndUpdate(
+      user?.userProfile,
+      req?.body?.userProfile
+    );
+    const updatedUser = await userModel.findByIdAndUpdate(userId, req.body, {
+      new: true,
+    });
+
     return res
       .status(200)
       .json({ result: user, message: "User Updated Successfully" });

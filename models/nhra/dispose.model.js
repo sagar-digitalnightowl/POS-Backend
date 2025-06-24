@@ -22,20 +22,14 @@ const disposeSchema = new Schema({
         default:Date.now
     },
 
-    deviceName:{
+    device:{
         type:Schema.Types.ObjectId,
         ref:'Product',
         required:true
     },
-    modelNumber:{
-        type:String
-    },
     numberOfDevicesInvolved:{
         type:Number,
         required:true
-    },
-    serialNumber:{
-        type:String,
     },
     lotNo:{
         type:String
@@ -43,17 +37,15 @@ const disposeSchema = new Schema({
     nhraRegistrationCertificateNo:{
         type:String
     },
+    // file 
     supremeCouncilOfEnvironmentApproval:{
         type:String
     },
 
-    manufacturerName:{
+    manufacturer:{
         type:Schema.Types.ObjectId,
         ref:'Manufacturer',
         required:true
-    },
-    manufacturerEmail:{
-        type:String
     },
     reasonOfDisposal:{
         type:[String],
@@ -81,36 +73,19 @@ const disposeSchema = new Schema({
             "Destruction"
         ]
     },
+    // file
     airwayBill:{
         type:String
     },
+    // file 
     destructionInvoice:{
         type:String
     },
 
-    healthCareFacilityName:{
+    healthCareFacility:{
         type:Schema.Types.ObjectId,
          ref:'HealthFacility',
          required:true
-    },
-    hfcContactPersonName:{
-        type:String,
-        required:true
-    },
-    healthCareFacilityAddress:{
-        type:String
-    },
-    hfcContactPersonPosition:{
-        type:String
-    },
-    hfcContactPersonNumber:{
-        type:Number
-    },
-    hfcContactPersonCPR:{
-        type:String
-    },
-    healthCareFacilityEmail:{
-        type:String
     },
     healthCareFacilitycrNo:{
         type:Number
@@ -118,16 +93,9 @@ const disposeSchema = new Schema({
     nhraLicenseNo:{
         type:Number
     },
-
-    authorizedRepresentativeName:{
+    authorizedRepresentative:{
         type:Schema.Types.ObjectId,
         ref:'AuthorizedRepresentative'
-    },
-    mobileNumber:{
-        type:Number
-    },
-    authorizedRepresentativeEmail:{
-        type:String
     },
     dateOfReportAwareness:{
         type:Date,
@@ -149,7 +117,6 @@ const disposeSchema = new Schema({
     crNo:{
         type:String
     },
-
     reportStatus:{
         type:String,
         enum:[

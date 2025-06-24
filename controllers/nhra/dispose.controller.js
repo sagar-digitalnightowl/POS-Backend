@@ -5,237 +5,230 @@ import authorizedRepresentativeModel from "../../models/nhra/authorizedRepresent
 import { v4 as uuidv4 } from "uuid";
 import { uploadFile } from "../../utils/s3.js";
 import healthFacilityModel from "../../models/nhra/healthFacility.model.js";
+import {
+    deleteFileFromCloudinary,
+  handleFilesUpload,
+  updateFilesUpload,
+} from "../../cloudService/fileService.js";
 
+const routes = {};
 
-const routes = {}
+routes.addDispose = async (req, res) => {
+  try {
+    const {
+      device,
+      manufacturer,
+      healthCareFacility,
+      authorizedRepresentative,
+      reasonOfDisposal,
+    } = req.body;
 
-routes.addDispose = async(req,res)=>{
-    try {
-        const{
-            name,
-            cprNumber,
-            mobileNumber,
-            email,
-            date,
-
-            deviceName,
-            numberOfDevicesInvolved,
-            lotNo,
-            nhraRegistrationCertificateNo,
-
-            manufacturerName,
-            reasonOfDisposal,
-            otherReasonOfDisposal,
-            action,
-
-            healthCareFacilityName,
-            healthCareFacilityEmail,
-            healthCareFacilitycrNo,
-            nhraLicenseNo,
-
-            authorizedRepresentativeName,
-            dateOfReportAwareness,
-            companyName,
-            telephoneNo,
-            emailAddress,
-            address,
-            crNo,
-            reportStatus,
-            otherReportStatus
-
-        }=req.body
-        let documents ={
-            supremeCouncilOfEnvironmentApproval: null,
-            airwayBill: null,
-            destructionInvoice: null,
-            nhraLicenseNo: null
-        }
-        if (req.files && req.files.length > 0) {
-              for (const file of req.files) {
-                const fileKey = `importation/${uuidv4()}_${file.originalname}`;
-                const uploadResult = await uploadFile(file, fileKey);
-        
-                // Match file field name with the corresponding document key
-                if (file.fieldname in documents) {
-                  documents[file.fieldname] = uploadResult.Location;
-                }
-              }
-            }
-
-            const product = await productModel.findById(deviceName);
-            if (!product) {
-              return res.status(404).json({ error: "Device not found" });
-            }    
-            const manufacturer = await manufacturerModel.findById(manufacturerName);
-            if (!manufacturer) {
-            return res.status(404).json({ error: "Manufacturer not found" });
-            }
-            const healthCareFacility = await healthFacilityModel.findById(healthCareFacilityName);
-            if(!healthCareFacility){
-            return res.status(404).json({ error: "Health Care Facility not found" });
-            }
-            const authorizedRepresentative = await authorizedRepresentativeModel.findById(authorizedRepresentativeName);
-            if (!authorizedRepresentative) {return res.status(404).json({ error: "Authorized Representative not found" });
-            }
-        
-        const newDispose = new disposeModel({
-            name,
-            cprNumber,
-            mobileNumber,
-            email,
-            date: date || Date.now(),
-            deviceName,
-            modelNumber: product.productModel,
-            numberOfDevicesInvolved,
-            serialNumber: product.productSerialNo,
-            lotNo,
-            nhraRegistrationCertificateNo,
-            ...documents,
-            manufacturerName,
-            manufacturerEmail: manufacturer.email,
-            reasonOfDisposal,
-            otherReasonOfDisposal,
-            action,
-            healthCareFacilityName,
-            hfcContactPersonName: healthCareFacility.person_name,
-            healthCareFacilityAddress: healthCareFacility.facility_address,
-            hfcContactPersonPosition: healthCareFacility.person_position,
-            hfcContactPersonNumber: healthCareFacility.person_mobile,
-            hfcContactPersonCPR: healthCareFacility.person_cpr,
-            healthCareFacilityEmail,
-            healthCareFacilitycrNo,
-            authorizedRepresentativeName,
-            mobileNumber: authorizedRepresentative.phoneNumber,
-            authorizedRepresentativeEmail: authorizedRepresentative.emailAddress,
-            dateOfReportAwareness: date || Date.now(),
-            companyName,
-            telephoneNo,
-            emailAddress,
-            address,
-            crNo,
-            reportStatus,
-            otherReportStatus
-        })
-        await newDispose.save()
-        res.status(200).json({result:newDispose,message:"Dispose added successfully"})
-    } catch (error) {
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
+    const existProduct = await productModel.findById(device);
+    if (!existProduct) {
+      return res.status(404).json({ error: "Device not found" });
     }
-}
+    const existManufacturer = await manufacturerModel.findById(manufacturer);
+    if (!existManufacturer) {
+      return res.status(404).json({ error: "Manufacturer not found" });
+    }
+    const existHealthCareFacility = await healthFacilityModel.findById(
+      healthCareFacility
+    );
+    if (!existHealthCareFacility) {
+      return res.status(404).json({ error: "Health Care Facility not found" });
+    }
+    const existAuthorizedRepresentative =
+      await authorizedRepresentativeModel.findById(authorizedRepresentative);
+    if (!existAuthorizedRepresentative) {
+      return res
+        .status(404)
+        .json({ error: "Authorized Representative not found" });
+    }
 
-routes.getAllDispose = async(req,res)=>{
-    try {
-        const allDispose = await disposeModel.find()
-        .populate('deviceName','productName')
-        .populate('manufacturerName','name')
-        .populate('healthCareFacilityName','facility_name')
-        .populate('authorizedRepresentativeName','name')
+    const uploadFiles = await handleFilesUpload(req.files, "Dispose");
 
-    if(!allDispose || allDispose.length ===0){
+    const parsedReasonOfDisposal = reasonOfDisposal
+      ? JSON.parse(reasonOfDisposal)
+      : [];
+
+    const newDispose = new disposeModel({
+      ...req.body,
+      reasonOfDisposal: parsedReasonOfDisposal,
+      supremeCouncilOfEnvironmentApproval:
+        uploadFiles.supremeCouncilOfEnvironmentApproval,
+      airwayBill: uploadFiles.airwayBill,
+      destructionInvoice: uploadFile.destructionInvoice,
+    });
+    await newDispose.save();
+    res
+      .status(201)
+      .json({ result: newDispose, message: "Dispose added successfully" });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+routes.getAllDispose = async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+
+    const allDoc = await disposeModel.countDocuments();
+    const totalPage = Math.ceil(allDoc / limit);
+
+    const allDispose = await disposeModel
+      .find()
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate("device", "productName")
+      .populate("manufacturer", "name")
+      .populate("authorizedRepresentative", "name");
+
+    if (!allDispose || allDispose.length === 0) {
       return res.status(404).json({ message: "Dispose Event found" });
     }
 
-    return res.status(200).json({result: allDispose,message:"Dispose Retrived Successfully"})
-    } catch (error) {
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
+    return res.status(200).json({
+      result: allDispose,
+      totalPage,
+      message: "Dispose Retrived Successfully",
+    });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+routes.getDisposeById = async (req, res) => {
+  try {
+    const disposeById = req.params.id;
+
+    if (!disposeById) {
+      res.status(400).json({ error: "Dispose Id is required" });
     }
-}
+    const dispose = await disposeModel.findById(disposeById);
 
-routes.getDisposeById = async(req,res)=>{
-    try {
-        const disposeById = req.params.id
-
-        if(!disposeById){
-            res.status(400).json({error:"Dispose Id is required"})
-        }
-        const dispose = await disposeModel.findById(disposeById)
-        .populate('deviceName','productName')
-        .populate('manufacturerName','name')
-        .populate('healthCareFacilityName','facility_name')
-        .populate('authorizedRepresentativeName','name')
-
-        if(!dispose){
-            res.status(400).json({error:`Dispose is not found with ID ${disposeById}`})
-        }
-        res.status(200).json({result:dispose,message:"Dispose retrived Successfully"})
-    } catch (error) {
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
+    if (!dispose) {
+      res
+        .status(400)
+        .json({ error: `Dispose is not found with ID ${disposeById}` });
     }
-}
+    res
+      .status(200)
+      .json({ result: dispose, message: "Dispose retrived Successfully" });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
 
-routes.updateDisposeById = async(req,res)=>{
-    try {
-        const disposeById = req.params.id;
-        const updateData = req.body;
+routes.updateDisposeById = async (req, res) => {
+  try {
+    const disposeById = req.params.id;
+    const updateData = req.body;
 
-        if(!disposeById){
-            res.status(400).json({error:"Dispose Id is required"})
-        }
+    const {
+      device,
+      manufacturer,
+      healthCareFacility,
+      authorizedRepresentative,
+      reasonOfDisposal,
+    } = updateData;
 
-        if(updateData.deviceName){
-            const product = await productModel.findById(deviceName);
-            if (!product) {
-              return res.status(404).json({ error: "Device not found" });
-            }
-            updateData.modelNumber = product.productModel;
-            updateData.serialNumber = product.productSerialNo;
-        }
-        if(updateData.manufacturer){
-            const manufacturer = await manufacturerModel.findById(manufacturerName);
-            if (!manufacturer) {
-            return res.status(404).json({ error: "Manufacturer not found" });
-            }
-            updateData.manufacturerEmail = manufacturer.email;
-        }
-        if(updateData.healthCareFacilityName){
-            const healthCareFacility = await healthFacilityModel.findById(healthCareFacilityName);
-            if(!healthCareFacility){
-            return res.status(404).json({ error: "Health Care Facility not found" });
-            }
-            updateData.hfcContactPersonName = healthCareFacility.person_name;
-            updateData.healthCareFacilityAddress = healthCareFacility.facility_address;
-            updateData.hfcContactPersonPosition = healthCareFacility.person_position;
-            updateData.hfcContactPersonNumber = healthCareFacility.person_mobile;
-            updateData.hfcContactPersonCPR = healthCareFacility.person_cpr;
-        }
-        if(updateData.authorizedRepresentativeName){
-            const authorizedRepresentative = await authorizedRepresentativeModel.findById(authorizedRepresentativeName);
-            if (!authorizedRepresentative) {return res.status(404).json({ error: "Authorized Representative not found" });
-            }
-            updateData.mobileNumber = authorizedRepresentative.phoneNumber;
-            updateData.authorizedRepresentativeEmail = authorizedRepresentative.emailAddress;
-        }
-
-        const dispose = await disposeModel.findByIdAndUpdate(disposeById,updateData,{new:true})
-        if(!dispose){
-            res.status(400).json({error:`Dispose is not found with Id ${disposeById}`})
-        }
-        res.status(200).json({result:dispose,message:"Dispose updated successfully"})
-    } catch (error) {
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
+    if (!disposeById) {
+      res.status(400).json({ error: "Dispose Id is required" });
     }
-}
 
-routes.deleteDisposeById = async(req,res)=>{
-    try {
-        const disposeById = req.params.id;
+    const existDispose = await disposeModel.findById(disposeById);
 
-        if(!disposeById){
-            res.status(400).json({error:"Dispose Id is required"})
-        }
-        const dispose = await disposeModel.findByIdAndDelete(disposeById)
-    if(!dispose){
-      return res.status(400).json({error:`Dispose is not found with Id ${disposeById}`})
+    if (!existDispose) {
+      res
+        .status(400)
+        .json({ error: `Dispose is not found with Id ${disposeById}` });
     }
-    res.status(200).json({result:dispose,message:"Dispose Deleted Successfully"})
-    } catch (error) {
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
-    }
-}
 
-export default routes
+    const existProduct = await productModel.findById(device);
+    if (!existProduct) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+    const existManufacturer = await manufacturerModel.findById(manufacturer);
+    if (!existManufacturer) {
+      return res.status(404).json({ error: "Manufacturer not found" });
+    }
+    const existHealthCareFacility = await healthFacilityModel.findById(
+      healthCareFacility
+    );
+    if (!existHealthCareFacility) {
+      return res.status(404).json({ error: "Health Care Facility not found" });
+    }
+    const existAuthorizedRepresentative =
+      await authorizedRepresentativeModel.findById(authorizedRepresentative);
+    if (!existAuthorizedRepresentative) {
+      return res
+        .status(404)
+        .json({ error: "Authorized Representative not found" });
+    }
+
+    if (req.files) {
+      try {
+        const uploadedFiles = await updateFilesUpload(
+          req.files,
+          existDispose,
+          "Dispose"
+        );
+        Object.assign(updateData, uploadedFiles); // Merge new file URLs into updateData
+      } catch (error) {
+        return res.status(500).json({ error: error.message });
+      }
+    }
+
+    const parsedReasonOfDisposal = reasonOfDisposal
+      ? JSON.parse(reasonOfDisposal)
+      : [];
+
+    const dispose = await disposeModel.findByIdAndUpdate(
+      disposeById,
+      {
+        ...updateData,
+        reasonOfDisposal: parsedReasonOfDisposal
+      },
+      { new: true }
+    );
+
+    res
+      .status(200)
+      .json({ result: dispose, message: "Dispose updated successfully" });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+routes.deleteDisposeById = async (req, res) => {
+  try {
+    const disposeById = req.params.id;
+
+    if (!disposeById) {
+      res.status(400).json({ error: "Dispose Id is required" });
+    }
+    const dispose = await disposeModel.findByIdAndDelete(disposeById);
+    if (!dispose) {
+      return res
+        .status(400)
+        .json({ error: `Dispose is not found with Id ${disposeById}` });
+    }
+
+    await deleteFileFromCloudinary(dispose?.supremeCouncilOfEnvironmentApproval);
+    await deleteFileFromCloudinary(dispose?.airwayBill);
+    await deleteFileFromCloudinary(dispose?.destructionInvoice);
+
+    res
+      .status(200)
+      .json({ result: dispose, message: "Dispose Deleted Successfully" });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+export default routes;

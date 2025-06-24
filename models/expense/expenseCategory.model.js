@@ -8,11 +8,11 @@ const expenseCategorySchema = new Schema({
     categoryCode:{
         type:String,
         required:true
-    },
-    addAsSubcategory:{
-        type:Boolean,
-        default:false
     }
+    // addAsSubcategory:{
+    //     type:Boolean,
+    //     default:false
+    // }
 })
 
 const ExpenseCategory = mongoose.model('ExpenseCategory',expenseCategorySchema)

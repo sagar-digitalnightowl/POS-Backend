@@ -5,211 +5,233 @@ import productModel from "../../models/products/productList.model.js";
 import manufacturerModel from "../../models/contacts/manufacturer.model.js";
 import { v4 as uuidv4 } from "uuid";
 import { uploadFile } from "../../utils/s3.js";
+import { deleteFileFromCloudinary, handleFilesUpload, updateFilesUpload } from "../../cloudService/fileService.js";
 
-const routes = {}
+const routes = {};
 
-routes.addSafetyNotice = async(req,res)=>{
-    try{
-        const{
-            reportType,
-            riskClassification,
-            reporterIssuer,
-            regulatoryAuthority,
-            reportReferenceLink,
-            copyOfReport,
+routes.addSafetyNotice = async (req, res) => {
+  try {
+    const {
+      manufacturer,
+      device,
+      authorizedRepresentative,
+      healthCareFacility,
+    } = req.body;
 
-            manufacturerName,
-
-            deviceName,
-
-            descriptionOfFSN,
-            advisedActionByTheManufacturer,
-
-            authorizedRepresentativeName,
-
-            correctiveAction,
-            recall,
-
-            healthCareFacilityName,
-
-            contactPerson,
-
-        }=req.body
-
-        let documents = {
-            copyOfReport: null,
-            lpo: null,
-            importationHistory: null,
-            nhraMedicalDeviceRegistrationLicense: null,
-            returnInvoice: null,
-            destructionInvoice: null,
-            acknowledgment: null,
-            signature: null,
-            signatureDeclarationLetter: null
-        };
-
-
-
-          const manufacturer = await manufacturerModel.findById(manufacturerName)
-          if (!manufacturer) {return res.status(404).json({ error: "Manufacturer not found" });}  
-
-          const medicalDevice = await productModel.findById(deviceName);
-          if (!medicalDevice) {return res.status(404).json({ error: "Device not found" });}
-
-          const authorizedRepresentative = await authorizedRepresentativeModel.findById(authorizedRepresentativeName)
-          if (!authorizedRepresentative) {return res.status(404).json({ error: "Authorized Representative not found" });}
-
-          const healthCareFacility = await healthFacilityModel.findById(healthCareFacilityName)
-          if (!healthCareFacility) {return res.status(404).json({ error: "Health Care Facility not found" });}
-
-          const newSafetyNotice = new safetyNoticeModel({
-            reportType,
-            riskClassification,
-            reporterIssuer,
-            regulatoryAuthority,
-            reportReferenceLink,
-            copyOfReport,
-            manufacturerName,
-            countryOfOrigin: manufacturer.country,
-            manufacturerEmail: manufacturer.email,
-            deviceName,
-            modelNumber: medicalDevice.productModel,
-            gmdnCODE: medicalDevice.productGMDNCode,
-            serialNumber: medicalDevice.productSerialNo,
-            hsCode: medicalDevice.productHSCode,
-            descriptionOfFSN,
-            advisedActionByTheManufacturer,
-            authorizedRepresentativeName,
-            mobileNumber: authorizedRepresentative.phoneNumber,
-            authorizedRepresentativeEmail: authorizedRepresentative.emailAddress,
-            nhraLicenseNumber: authorizedRepresentative.licenseNumber,
-            cprNumber: authorizedRepresentative.CRCPRNo,
-            ...documents,
-            correctiveAction,
-            recall,
-            healthCareFacilityName,
-            contactPersonMobile: healthCareFacility.person_mobile,
-            contactPerson: healthCareFacility.person_name,
-            email: healthCareFacility.person_email,
-            contactPersonCPR: healthCareFacility.person_cpr,
-            contactPerson
-          })
-          await newSafetyNotice.save()
-         res.status(200).json({result:newSafetyNotice,message:"Safety Notice added successfully"})
-    }catch(error){
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
+    const existManufacturer = await manufacturerModel.findById(manufacturer);
+    if (!existManufacturer) {
+      return res.status(404).json({ error: "Manufacturer not found" });
     }
-}
 
-routes.getAllSafetyNotice = async(req,res)=>{
-    try{
-        const allSafetyNotice = await safetyNoticeModel.find()
-        .populate('manufacturerName','name')
-        .populate('deviceName','productName')
-        .populate('authorizedRepresentativeName','name')
-        .populate('healthCareFacilityName','facility_name')
-
-        if(!allSafetyNotice || allSafetyNotice === 0){
-            return res.status(400).json({error:"No Safety Notice found"})
-        }
-        res.status(200).json({result:allSafetyNotice,message:"Safety Notice retrived successfully"})
-    }catch(error){
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
+    const medicalDevice = await productModel.findById(device);
+    if (!medicalDevice) {
+      return res.status(404).json({ error: "Device not found" });
     }
-}
 
-routes.getSafetyNoticeById = async(req,res)=>{
-    try {
-        const safetyNoticeId = req.params.id
-
-        if(!safetyNoticeId){
-            res.status(400).json({error:"Safety Notice Id is required"})
-        }
-        const safetyNotice = await safetyNoticeModel.findById(safetyNoticeId)
-        .populate('manufacturerName','name')
-        .populate('deviceName','productName')
-        .populate('authorizedRepresentativeName','name')
-        .populate('healthCareFacilityName','facility_name')
-
-        if(!safetyNotice){
-            res.status(400).json({error:`Safety Notice is not found with ID ${safetyNoticeId}`})
-        }
-        res.status(200).json({result:safetyNotice,message:"Safety Notice retrived Successfully"}) 
-    } catch (error) {
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
+    const existAuthorizedRepresentative =
+      await authorizedRepresentativeModel.findById(authorizedRepresentative);
+    if (!existAuthorizedRepresentative) {
+      return res
+        .status(404)
+        .json({ error: "Authorized Representative not found" });
     }
-}
 
-routes.updateSafetyNoticeById = async(req,res)=>{
-    try{
-        const safetyNoticeId = req.params.id
-        const updateData = req.body;
-
-        if(!safetyNoticeId){
-            res.status(400).json({error:"Safety Notice Id is required"})
-        }
-
-        if(updateData.manufacturerName){
-            const manufacturer = await manufacturerModel.findById(updateData.manufacturerName)
-          if (!manufacturer) {return res.status(404).json({ error: "Manufacturer not found" });}
-            updateData.countryOfOrigin = manufacturer.country;
-            updateData.manufacturerEmail = manufacturer.email;
-        }
-        if(updateData.deviceName){
-          const medicalDevice = await productModel.findById(deviceName);
-          if (!medicalDevice) {return res.status(404).json({ error: "Device not found" });}
-          updateData.modelNumber = medicalDevice.productModel;
-          updateData.gmdnCODE = medicalDevice.productGMDNCode;
-          updateData.serialNumber = medicalDevice.productSerialNo;
-          updateData.hsCode = medicalDevice.productHSCode;
-        }
-        if(updateData.authorizedRepresentativeName){
-          const authorizedRepresentative = await authorizedRepresentativeModel.findById(authorizedRepresentativeName)
-          if (!authorizedRepresentative) {return res.status(404).json({ error: "Authorized Representative not found" });}
-          updateData.mobileNumber = authorizedRepresentative.phoneNumber;
-          updateData.authorizedRepresentativeEmail = authorizedRepresentative.emailAddress;
-          updateData.nhraLicenseNumber = authorizedRepresentative.licenseNumber;
-          updateData.cprNumber =  authorizedRepresentative.CRCPRNo;
-        }
-        if(updateData.healthCareFacilityName){
-            const healthCareFacility = await healthFacilityModel.findById(healthCareFacilityName)
-          if (!healthCareFacility) {return res.status(404).json({ error: "Health Care Facility not found" });}
-            updateData.contactPersonMobile = healthCareFacility.person_mobile;
-            updateData.contactPerson = healthCareFacility.person_name;
-            updateData.email = healthCareFacility.person_email;
-            updateData.contactPersonCPR = healthCareFacility.person_cpr;
-        }
-        const safetyNotice = await safetyNoticeModel.findByIdAndUpdate(safetyNoticeId,updateData,{new:true})
-
-        if(!safetyNotice){
-            res.status(400).json({error:`Safety Notice is not found with Id ${safetyNoticeId}`})
-        }
-        res.status(200).json({result:safetyNotice,message:"Safety Notice updated successfully"})
-    }catch(error){
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
+    const existHealthCareFacility = await healthFacilityModel.findById(
+      healthCareFacility
+    );
+    if (!existHealthCareFacility) {
+      return res.status(404).json({ error: "Health Care Facility not found" });
     }
-}
-routes.deleteSafetyNoticeById = async(req,res)=>{
-    try {
-        const safetyNoticeId = req.params.id
 
-        if(!safetyNoticeId){
-            res.status(400).json({error:"Safety Notice Id is required"})
-        }
-        const safetyNotice = await safetyNoticeModel.findByIdAndDelete(safetyNoticeId)
-    if(!safetyNotice){
-      return res.status(400).json({error:`Safety Notice is not found with Id ${safetyNoticeId}`})
+    const uploadedFiles = await handleFilesUpload(
+      req.files,
+      "Field Safety Notice"
+    );
+
+    const newSafetyNotice = new safetyNoticeModel({
+      ...req.body,
+      copyOfReport: uploadedFiles.copyOfReport,
+      lpo: uploadedFiles.lpo,
+      importationHistory: uploadedFiles.importationHistory,
+      nhraMedicalDeviceRegistrationLicense:
+        uploadedFiles.nhraMedicalDeviceRegistrationLicense,
+      returnInvoice: uploadedFiles.returnInvoice,
+      destructionInvoice: uploadedFiles.destructionInvoice,
+      acknowledgment: uploadedFiles.acknowledgment,
+      signature: uploadedFiles.signature,
+      signatureDeclarationLetter: uploadedFiles.signatureDeclarationLetter,
+    });
+    await newSafetyNotice.save();
+    res.status(201).json({
+      result: newSafetyNotice,
+      message: "Safety Notice added successfully",
+    });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+routes.getAllSafetyNotice = async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+
+    const allDoc = await safetyNoticeModel.countDocuments();
+    const totalPage = Math.ceil(allDoc / limit);
+
+    const allSafetyNotice = await safetyNoticeModel
+      .find()
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate('device', 'productName')
+      .populate('manufacturer', 'name country');
+
+    if (!allSafetyNotice || allSafetyNotice === 0) {
+      return res.status(400).json({ error: "No Safety Notice found" });
     }
-    res.status(200).json({result:safetyNotice,message:"Safety Notice Deleted Successfully"})
+    res.status(200).json({
+      result: allSafetyNotice,
+      totalPage,
+      message: "Safety Notice retrived successfully",
+    });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
 
-    } catch (error) {
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
+routes.getSafetyNoticeById = async (req, res) => {
+  try {
+    const safetyNoticeId = req.params.id;
+
+    if (!safetyNoticeId) {
+      res.status(400).json({ error: "Safety Notice Id is required" });
     }
-}
+    const safetyNotice = await safetyNoticeModel.findById(safetyNoticeId);
 
-export default routes
+    if (!safetyNotice) {
+      res.status(400).json({
+        error: `Safety Notice is not found with ID ${safetyNoticeId}`,
+      });
+    }
+    res.status(200).json({
+      result: safetyNotice,
+      message: "Safety Notice retrived Successfully",
+    });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+routes.updateSafetyNoticeById = async (req, res) => {
+  try {
+    const safetyNoticeId = req.params.id;
+    const updateData = req.body;
+
+    const existSafetyNotice = await safetyNoticeModel.findById(safetyNoticeId);
+
+    if (!existSafetyNotice) {
+      res.status(400).json({
+        error: `Safety Notice is not found with Id ${safetyNoticeId}`,
+      });
+    }
+
+    const {
+      manufacturer,
+      device,
+      authorizedRepresentative,
+      healthCareFacility,
+    } = req.body;
+
+    const existManufacturer = await manufacturerModel.findById(manufacturer);
+    if (!existManufacturer) {
+      return res.status(404).json({ error: "Manufacturer not found" });
+    }
+
+    const medicalDevice = await productModel.findById(device);
+    if (!medicalDevice) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    const existAuthorizedRepresentative =
+      await authorizedRepresentativeModel.findById(authorizedRepresentative);
+    if (!existAuthorizedRepresentative) {
+      return res
+        .status(404)
+        .json({ error: "Authorized Representative not found" });
+    }
+
+    const existHealthCareFacility = await healthFacilityModel.findById(
+      healthCareFacility
+    );
+    if (!existHealthCareFacility) {
+      return res.status(404).json({ error: "Health Care Facility not found" });
+    }
+
+    if (req.files) {
+      try {
+        const uploadedFiles = await updateFilesUpload(
+          req.files,
+          existSafetyNotice,
+          "Field Safety Notice"
+        );
+        Object.assign(updateData, uploadedFiles); // Merge new file URLs into updateData
+      } catch (error) {
+        return res.status(500).json({ error: error.message });
+      }
+    }
+
+    const safetyNotice = await safetyNoticeModel.findByIdAndUpdate(
+      safetyNoticeId,
+      updateData,
+      { new: true }
+    );
+
+    res.status(200).json({
+      result: safetyNotice,
+      message: "Safety Notice updated successfully",
+    });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+routes.deleteSafetyNoticeById = async (req, res) => {
+  try {
+    const safetyNoticeId = req.params.id;
+
+    if (!safetyNoticeId) {
+      res.status(400).json({ error: "Safety Notice Id is required" });
+    }
+    const safetyNotice = await safetyNoticeModel.findByIdAndDelete(
+      safetyNoticeId
+    );
+    if (!safetyNotice) {
+      return res.status(400).json({
+        error: `Safety Notice is not found with Id ${safetyNoticeId}`,
+      });
+    }
+
+    await deleteFileFromCloudinary(safetyNoticeId?.copyOfReport);
+    await deleteFileFromCloudinary(safetyNoticeId?.lpo);
+    await deleteFileFromCloudinary(safetyNoticeId?.importationHistory);
+    await deleteFileFromCloudinary(safetyNoticeId?.nhraMedicalDeviceRegistrationLicense);
+    await deleteFileFromCloudinary(safetyNoticeId?.returnInvoice);
+    await deleteFileFromCloudinary(safetyNoticeId?.destructionInvoice);
+    await deleteFileFromCloudinary(safetyNoticeId?.acknowledgment);
+    await deleteFileFromCloudinary(safetyNoticeId?.signature);
+    await deleteFileFromCloudinary(safetyNoticeId?.signatureDeclarationLetter);
+
+    res.status(200).json({
+      result: safetyNotice,
+      message: "Safety Notice Deleted Successfully",
+    });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+export default routes;

@@ -3,164 +3,194 @@ import authorizedRepresentativeModel from "../../models/nhra/authorizedRepresent
 import productModel from "../../models/products/productList.model.js";
 import { v4 as uuidv4 } from "uuid";
 import { uploadFile } from "../../utils/s3.js";
+import { deleteFileFromCloudinary, handleFilesUpload, updateFilesUpload } from "../../cloudService/fileService.js";
 
-const routes = {}
+const routes = {};
 
-routes.addComplaintHandling = async(req,res)=>{
-    try {
-        const{
-            complainantName,
-            complainantMobNo,
-            complainantEmail,
-            complainantCPRnumber,
-            complaintDate,
+routes.addComplaintHandling = async (req, res) => {
+  try {
+    const { authorizedRepresentative, medicalDevice } = req.body;
 
-            authorizedRepresentativeName,
-
-            medicalDeviceName,
-
-            complaintDescription,
-            actionTakenByAR
-        } = req.body
-
-        let supportiveDocuments = null;
-
-        if (req.file) {
-            const file = req.file;
-            const fileKey = `complaintHandeling/${uuidv4()}_${file.originalname}`;
-
-            const uploadResult = await uploadFile(file, fileKey);
-            supportiveDocuments = uploadResult.Location; 
-        }
-        console.log('Uploaded Files: ', req.file);
-
-
-        const authorizedRepresentative = await authorizedRepresentativeModel.findById(authorizedRepresentativeName)
-        if (!authorizedRepresentative) {return res.status(404).json({ error: "Authorized Representative not found" });}
-
-        const medicalDevice = await productModel.findById(medicalDeviceName);
-        if (!medicalDevice) {return res.status(404).json({ error: "Device not found" });}
-
-        const newComplaintHandling = new complaintHandlingModel({
-            complainantName,
-            complainantMobNo,
-            complainantEmail,
-            complainantCPRnumber,
-            complaintDate,
-
-            authorizedRepresentativeName,
-            mobileNumber: authorizedRepresentative.phoneNumber,
-            authorizedRepresentativeEmail: authorizedRepresentative.emailAddress,
-            CRCPRno: authorizedRepresentative.CRCPRNo,
-
-            medicalDeviceName,
-            serialNo: medicalDevice.productSerialNo,
-            gmdnCode: medicalDevice.productGMDNCode,
-            hsCode: medicalDevice.productHSCode,
-
-            complaintDescription,
-            actionTakenByAR,
-            supportiveDocuments
-
-        })
-        await newComplaintHandling.save()
-        res.status(200).json({result:newComplaintHandling,message:"Complaint Handling added successfully"})
-    } catch (error) {
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
+    const existAuthorizedRepresentative =
+      await authorizedRepresentativeModel.findById(authorizedRepresentative);
+    if (!existAuthorizedRepresentative) {
+      return res
+        .status(404)
+        .json({ error: "Authorized Representative not found" });
     }
-}
 
-routes.getAllComplaintHandling = async(req,res)=>{
-    try {
-        const allComplainHandling = await complaintHandlingModel.find()
-        .populate('authorizedRepresentativeName','name')
-        .populate('medicalDeviceName','productName')
-
-        if(!allComplainHandling){
-            return res.status(400).json({error:"No Complain found"})
-        }
-
-        res.status(200).json({result:allComplainHandling,message:"Complain Data retrived successfully"})
-    } catch (error) {
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
+    const existMedicalDevice = await productModel.findById(medicalDevice);
+    if (!existMedicalDevice) {
+      return res.status(404).json({ error: "Device not found" });
     }
-}
 
-routes.getComplaintHandlingById = async(req,res)=>{
-    try {
-        const complaintHandlingId = req.params.id
+    const uploadedFiles = await handleFilesUpload(req.files, "Complaint");
 
-        if(!complaintHandlingId){
-            res.status(400).json({error:"Complaint Handling Id is required"})
-        }
-        const complaintHandling = await complaintHandlingModel.findById(complaintHandlingId)
-        .populate('authorizedRepresentativeName','name')
-        .populate('medicalDeviceName','productName')
+    const newComplaintHandling = new complaintHandlingModel({
+      ...req.body,
+      supportiveDocuments: uploadedFiles.supportiveDocuments,
+    });
 
-        if(!complaintHandling){
-            res.status(400).json({error:`Complaint Handling is not found with ID ${complaintHandlingId}`})
-        }
-        res.status(200).json({result:complaintHandling,message:"Complaint Handling retrived Successfully"}) 
-    } catch (error) {
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
+    await newComplaintHandling.save();
+
+    res.status(201).json({
+      result: newComplaintHandling,
+      message: "Complaint Handling added successfully",
+    });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+routes.getAllComplaintHandling = async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+
+    const allDoc = await complaintHandlingModel.countDocuments();
+    const totalPage = Math.ceil(allDoc / limit);
+
+    const allComplainHandling = await complaintHandlingModel
+      .find()
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate("medicalDevice", "productName productModel");
+
+    if (!allComplainHandling) {
+      return res.status(400).json({ error: "No Complain found" });
     }
-}
 
-routes.updateHandlingById = async(req,res)=>{
-    try {
-        const complaintHandlingId = req.params.id
-        const updateData = req.body;
+    res.status(200).json({
+      result: allComplainHandling,
+      totalPage,
+      message: "Complain Data retrived successfully",
+    });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
 
-        if(!complaintHandlingId){
-            res.status(400).json({error:"Complaint Handling Id is required"})
-        }
+routes.getComplaintHandlingById = async (req, res) => {
+  try {
+    const complaintHandlingId = req.params.id;
 
-        if(updateData.authorizedRepresentativeName){
-            const authorizedRepresentative = await authorizedRepresentativeModel.findById(updateData.authorizedRepresentativeName)
-        if (!authorizedRepresentative) {return res.status(404).json({ error: "Authorized Representative not found" });}
-        updateData.mobileNumber = authorizedRepresentative.phoneNumber;
-        updateData.authorizedRepresentativeEmail = authorizedRepresentative.emailAddress;
-        updateData.CRCPRno = authorizedRepresentative.CRCPRNo;
-        }
-        if(updateData.medicalDeviceName){
-            const medicalDevice = await productModel.findById(deviceName);
-        if (!medicalDevice) {return res.status(404).json({ error: "Device not found" });}
-        updateData.serialNo = medicalDevice.productSerialNo;
-        updateData.gmdnCode = medicalDevice.productGMDNCode;
-        updateData.hsCode = medicalDevice.productHSCode;
-        }
-
-        const complaintHandling = await complaintHandlingModel.findByIdAndUpdate(complaintHandlingId,updateData,{new:true})
-
-        if(!complaintHandling){
-            res.status(400).json({error:`Complain is not found with Id ${complaintHandlingId}`})
-        }
-        res.status(200).json({result:complaintHandling,message:"Complain updated successfully"})
-    } catch (error) {
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
+    if (!complaintHandlingId) {
+      res.status(400).json({ error: "Complaint Handling Id is required" });
     }
-}
+    const complaintHandling = await complaintHandlingModel.findById(
+      complaintHandlingId
+    );
 
-routes.deleteHandlingById = async(req,res)=>{
-    try {
-        const complaintHandlingId = req.params.id
+    if (!complaintHandling) {
+      res.status(400).json({
+        error: `Complaint Handling is not found with ID ${complaintHandlingId}`,
+      });
+    }
+    res.status(200).json({
+      result: complaintHandling,
+      message: "Complaint Handling retrived Successfully",
+    });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
 
-        if(!complaintHandlingId){
-            res.status(400).json({error:"Complaint Handling Id is required"})
-        } 
-        const complaintHandling = await complaintHandlingModel.findByIdAndDelete(complaintHandlingId)
-    if(!complaintHandling){
-      return res.status(400).json({error:`Complaint Handling is not found with Id ${complaintHandlingId}`})
+routes.updateHandlingById = async (req, res) => {
+  try {
+    const complaintHandlingId = req.params.id;
+    const updateData = req.body;
+
+    const { authorizedRepresentative, medicalDevice } = updateData;
+
+    if (!complaintHandlingId) {
+      res.status(400).json({ error: "Complaint Handling Id is required" });
     }
-    res.status(200).json({result:complaintHandling,message:"Complaint Handling Deleted Successfully"})
-    } catch (error) {
-        console.log("error = ",error)
-        return res.status(500).json({error:"Something went wrong"})
+
+    const existComplaint = await complaintHandlingModel.findById(
+      complaintHandlingId
+    );
+
+    if (!existComplaint) {
+      return res.status(400).json({
+        error: `Complain is not found with Id ${complaintHandlingId}`,
+      });
     }
-}
+
+    const existAuthorizedRepresentative =
+      await authorizedRepresentativeModel.findById(authorizedRepresentative);
+    if (!existAuthorizedRepresentative) {
+      return res
+        .status(404)
+        .json({ error: "Authorized Representative not found" });
+    }
+
+    const existMedicalDevice = await productModel.findById(medicalDevice);
+    if (!existMedicalDevice) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    if (req.files) {
+      try {
+        const uploadedFiles = await updateFilesUpload(
+          req.files,
+          existComplaint,
+          "Complaint"
+        );
+        Object.assign(updateData, uploadedFiles); // Merge new file URLs into updateData
+      } catch (error) {
+        return res.status(500).json({ error: error.message });
+      }
+    }
+
+    const complaintHandling = await complaintHandlingModel.findByIdAndUpdate(
+      complaintHandlingId,
+      updateData,
+      { new: true }
+    );
+
+    if (!complaintHandling) {
+      res.status(400).json({
+        error: `Complain is not found with Id ${complaintHandlingId}`,
+      });
+    }
+    res.status(200).json({
+      result: complaintHandling,
+      message: "Complain updated successfully",
+    });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+routes.deleteHandlingById = async (req, res) => {
+  try {
+    const complaintHandlingId = req.params.id;
+
+    if (!complaintHandlingId) {
+      res.status(400).json({ error: "Complaint Handling Id is required" });
+    }
+    const complaintHandling = await complaintHandlingModel.findByIdAndDelete(
+      complaintHandlingId
+    );
+    if (!complaintHandling) {
+      return res.status(400).json({
+        error: `Complaint Handling is not found with Id ${complaintHandlingId}`,
+      });
+    }
+
+    await deleteFileFromCloudinary(complaintHandling?.supportiveDocuments);
+    
+    res.status(200).json({
+      result: complaintHandling,
+      message: "Complaint Handling Deleted Successfully",
+    });
+  } catch (error) {
+    console.log("error = ", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
 
 export default routes;

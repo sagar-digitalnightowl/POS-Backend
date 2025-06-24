@@ -25,23 +25,27 @@ routes.addSelseAgent = async (req, res) => {
   }
 };
 
+
 routes.getAllSelseAgent = async (req, res) => {
   try {
-    const { page = 1, limit = 25 } = req.query;
+    const { page = 1, limit = 10 } = req.query;
+
+    const agentsCount = await selseCommissionAgent.countDocuments();
+    const totalPage = Math.ceil(agentsCount/limit);
+
     const allAgents = await selseCommissionAgent
       .find()
       .skip(limit * (page - 1))
       .limit(limit);
-    const totalAgent = await selseCommissionAgent.find();
+
     if (!allAgents) return res.status(404).json({ error: "Agents Not found" });
+
     return res.status(200).json({
-      result: {
-        allAgents,
-        totalAgent: totalAgent.length,
-        meaasage: "Document fetched successfully",
-      },
+      result: allAgents,
+      totalPage,
+      meaasage: "Document fetched successfully",
     });
-  } catch (error) {
+  } catch (error) { 
     console.log("error=", error.message);
     res.status(500).json({ error: "Something went wrong" });
   }

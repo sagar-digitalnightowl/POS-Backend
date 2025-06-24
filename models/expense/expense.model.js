@@ -1,76 +1,80 @@
-import mongoose, { Schema } from 'mongoose'
+import mongoose, { Schema } from "mongoose";
 
-const expenseSchema = new Schema({
-    businessLocation:{
-        type:Schema.Types.ObjectId,
-        ref:'Product',
+const expenseSchema = new Schema(
+  {
+    businessLocation: {
+      type: String,
     },
-    expenseCategory:{
-        type:Schema.Types.ObjectId,
-        ref:'ExpenseCategory',
+    expenseCategory: {
+      type: Schema.Types.ObjectId,
+      ref: "ExpenseCategory",
     },
-    subCategory:{
-        type:String,
+    subCategory: {
+      type: String,
     },
-    referenceNo:{
-        type:String
+    referenceNo: {
+      type: String,
     },
-    date:{
-        type:Date,
-        default:Date.now
+    date: {
+      type: Date,
+      default: Date.now,
     },
-    expenseFor:{
-        type:String
+    expenseFor: {
+      type: String,
     },
-    expenseForContact:{
-        type:String
+    expenseForContact: {
+      type: String,
     },
-    attachDocument:{
-        type:String
+    // file
+    attachDocument: {
+      type: String,
     },
-    applicableTax:{
-        type:String
+    applicableTax: {
+      type: String,
     },
-    totalAmount:{
-        type:Number
+    totalAmount: {
+      type: Number,
     },
-    expenseNote:{
-        type:String
+    expenseNote: {
+      type: String,
     },
-    isRefund:{
-        type:Boolean,
-        default: false
+    isRefund: {
+      type: Boolean,
+      default: false,
     },
-    amount:{
-        type:Number,
-        required:true,
-        min: 0
+    isRecurring: {
+        type: Boolean,
+        default: false,
     },
-    paidOn: {
-        type: Date,
-        required: true,
-        default: Date.now
+    recurringinterval: {
+        value: {type: String},
+        unit: {type: String, enum: ['Days', 'Months', 'Years']}
     },
-    paymentMethod: {
+    numberOfRepetitions: {
+        type: String
+    },
+    payment: {
+      amount: { type: String },
+      paidOn: { type: String, default: Date.now },
+      paymentMethod: {
         type: String,
         required: true,
         enum: [
-            "Cash",
-            "Card",
-            "Cheque",
-            "Bank Transfer",
-            "Other",
-            "Benefit Pay",
-            "Custom Payment 2",
-            "Custom Payment 3"
-        ]
+          "Cash",
+          "Card",
+          "Cheque",
+          "Bank Transfer",
+          "Other",
+          "Benefit Pay",
+          "Custom Payment 2",
+          "Custom Payment 3",
+        ],
+      },
+      paymentNote: { type: String },
     },
-    paymentNote:{
-        type:String,
-    }
+  },
+  { timestamps: true }
+);
 
-},{timestamps: true}
-)
-
-const Expense = mongoose.model("Expense",expenseSchema)
+const Expense = mongoose.model("Expense", expenseSchema);
 export default Expense;

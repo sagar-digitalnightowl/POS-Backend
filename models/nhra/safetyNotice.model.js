@@ -35,32 +35,14 @@ const safetyNoticeSchema = new Schema({
     type:String
   },
 
-  manufacturerName:{
+  manufacturer:{
     type:Schema.Types.ObjectId,
     ref:'Manufacturer'
   },
-  countryOfOrigin:{
-    type:String
-  },
-  manufacturerEmail:{
-    type:String
-  },
 
-  deviceName:{
+  device:{
     type:Schema.Types.ObjectId,
     ref:"Product",    
-  },
-  modelNumber:{
-    type:String,
-  },
-  gmdnCODE:{
-    type:String
-  },
-  serialNumber:{
-    type:String
-  },
-  hsCode:{
-    type:String
   },
 
   //pdf file
@@ -85,22 +67,10 @@ const safetyNoticeSchema = new Schema({
     required:true
   },
 
-  authorizedRepresentativeName:{
+  authorizedRepresentative:{
     type:Schema.Types.ObjectId,
     ref:'AuthorizedRepresentative',
     required:true
-  },
-  mobileNumber:{
-    type:Number
-  },
-  authorizedRepresentativeEmail:{
-    type:String
-  },
-  nhraLicenseNumber:{
-    type:String
-  },
-  cprNumber:{
-    type:String
   },
 
   correctiveAction:{
@@ -135,22 +105,11 @@ const safetyNoticeSchema = new Schema({
     }
   },
 
-  healthCareFacilityName:{
+  healthCareFacility:{
     type:Schema.Types.ObjectId,
     ref:'HealthFacility'
   },
-  contactPersonMobile:{
-    type:Number
-  },
-  contactPerson:{
-    type:String
-  },
-  email:{
-    type:String
-  },
-  contactPersonCPR:{
-    type:String
-  },
+ 
   //PDF File
   acknowledgment:{
     type:String

@@ -24,13 +24,37 @@ routes.addUnit = async (req, res) => {
 routes.getAllUnit = async (req, res) => {
   try {
     const { limit = 10, page = 1 } = req.query;
+
+    const allCategory = await unitSchema.countDocuments();
+    const totalPage = Math.ceil(allCategory / limit);
     const allDoc = await unitSchema
       .find()
       .skip(limit * (page - 1))
       .limit(limit);
     return res
       .status(200)
-      .json({ result: allDoc, message: "Document fetched successfully" });
+      .json({
+        result: allDoc,
+        totalPage,
+        message: "Document fetched successfully",
+      });
+  } catch (error) {
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+
+routes.getUnits = async (req, res) => {
+  try {
+    const allDoc = await unitSchema
+      .find()
+      .sort({ createdAt: -1 })
+    return res
+      .status(200)
+      .json({
+        result: allDoc,
+        message: "Document fetched successfully",
+      });
   } catch (error) {
     return res.status(500).json({ error: "Something went wrong" });
   }
@@ -91,16 +115,16 @@ routes.updateUnitById = async (req, res) => {
 };
 
 
-routes.deleteUnitById=async(req,res)=>{
-    try{
-     const unitId=req.params.id;
-     const doc=await unitSchema.findByIdAndDelete(unitId);
-     if(!doc)
-         return res.status(404).json({error:"Document not found with this id"})
-      return res.status(200).json({result:doc,message:"Document deleted successfully"})  
-    }catch(error){
-        return res.status(500).json({error:"Something went wrong"});
-    }
+routes.deleteUnitById = async (req, res) => {
+  try {
+    const unitId = req.params.id;
+    const doc = await unitSchema.findByIdAndDelete(unitId);
+    if (!doc)
+      return res.status(404).json({ error: "Document not found with this id" })
+    return res.status(200).json({ result: doc, message: "Document deleted successfully" })
+  } catch (error) {
+    return res.status(500).json({ error: "Something went wrong" });
+  }
 }
 
 

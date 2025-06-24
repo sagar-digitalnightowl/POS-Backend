@@ -63,7 +63,7 @@ const customerAndSupplierSchema = new Schema({
     type: Number,
   },
   totalPurchaseReturnDue: {
-    type: String,
+    type: Number,
   },
   payTerm: {
     type: String,

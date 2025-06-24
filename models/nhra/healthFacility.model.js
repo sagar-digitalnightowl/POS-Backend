@@ -1,28 +1,28 @@
 import mongoose, { Schema } from 'mongoose'
 
 const healthFacilitySchema = new Schema({
-    facility_name:{
+    facilityName:{
         type:String,
         required:true
     },
-    facility_address:{
+    facilityAddress:{
         type:String,
         required:true
     },
-    person_name:{
+    personName:{
         type:String,
         required:true
     },
-    person_position:{
+    personPosition:{
         type:String
     },
-    person_mobile:{
+    personMobile:{
         type:Number
     },
-    person_email:{
+    personEmail:{
         type:String
     },
-    person_cpr:{
+    personCPR:{
         type:String,
         required:true
     }

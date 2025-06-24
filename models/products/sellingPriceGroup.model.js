@@ -1,15 +1,15 @@
 import mongoose, { Schema } from "mongoose";
 
-const sellingPriceGroupSchema=new Schema({
-    name:{
-      type:String,
-      required:true
-    },
-    description:{
-        type:String,
-        required:true
-    }
-})
+const sellingPriceGroupSchema = new Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  description: {
+    type: String,
+    required: true
+  }
+}, { timestamps: true })
 
-const SellingPriceGroup=mongoose.model("SellingPriceGroup",sellingPriceGroupSchema) 
+const SellingPriceGroup = mongoose.model("SellingPriceGroup", sellingPriceGroupSchema)
 export default SellingPriceGroup;

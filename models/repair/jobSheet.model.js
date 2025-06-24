@@ -11,81 +11,91 @@ const jobsheetSchema = new Schema({
     required: true,
   },
   serviceType: {
-   type:String,
-   enum: ['Carryin', 'Pickup', 'Onsite'],
-   required:true
+    type: String,
+    enum: ['Carryin', 'Pickup', 'Onsite'],
+    required: true
   },
   pickUpOrOnSiteAddress: {
     type: String,
     required: true,
   },
-  brand:{
-    type:mongoose.Types.ObjectId,
-     ref:"Brand",
-    required:true
+  brand: {
+    type: mongoose.Types.ObjectId,
+    ref: "Brand",
+    required: true
   },
-  device:{
-     type:mongoose.Types.ObjectId,
-     ref:"Product",
-     required:true,  
-    },
-    deviceModel:{
-      type:mongoose.Types.ObjectId,
-      ref:"Product",
-      required:true   
-    },
-    serialNumber:{
-        type:String,
-        required:true   
+  device: {
+    type: mongoose.Types.ObjectId,
+    ref: "Product",
+    required: true,
   },
-  passwordOrPatternLock:{
-     type:String,
-     required:true
+  deviceModel: {
+    type: mongoose.Types.ObjectId,
+    ref: "Product",
+    required: true
   },
-  conditionOfTheProduct:{
-      type:String,
-      required:true
+  serialNumber: {
+    type: String,
+    required: true
   },
-  commentByTechnician:{
-     type:String,
+  passwordOrPatternLock: {
+    type: String,
+    required: true
   },
-  estimatedCost:{
-      type:Number,
-      required:true,
-      min:[1,"Estimated cost less then 1"]
+  productConfiguration: {
+    type: String,
+    required: true
   },
-  status:{
-    type:String,
-    enum:["Pending","Completed"]
+  problemReportedByTheCustomer: {
+    type: String,
+    required: true
   },
-  expectedDeliveryDate:{
-      type:Date,
-      required:true
+  conditionOfTheProduct: {
+    type: String,
+    required: true
   },
-  document:{
-      type:String,
-      required:true
+  commentByTechnician: {
+    type: String,
   },
-  sendNotification:{
-        type:String,
-        enum:["Sms","Email"],
-        required:true  
+  estimatedCost: {
+    type: Number,
+    required: true,
+    min: [1, "Estimated cost less then 1"]
   },
-  customField1:{
-      type:String,
+  status: {
+    type: String,
+    enum: ["Pending", "Completed"],
+    default: "Pending"
   },
-  customField2:{
-      type:String,
+  expectedDeliveryDate: {
+    type: Date,
+    required: true
   },
-  customField3:{
-      type:String,
+  document: {
+    type: String,
+    required: true
   },
-  customField4:{
-      type:String,
+  sendNotification: {
+    type: String,
+    enum: ["Sms", "Email"],
+    required: true
   },
-  customField5:{
-      type:String,
+  customField1: {
+    type: String,
   },
-},{timestamps:true});
+  customField2: {
+    type: String,
+  },
+  customField3: {
+    type: String,
+  },
+  customField4: {
+    type: String,
+  },
+  customField5: {
+    type: String,
+  },
+}, { timestamps: true });
+
 const JobSheet = mongoose.model("JobSheet", jobsheetSchema);
 export default JobSheet;

@@ -8,8 +8,8 @@ const leaveTypeSchema = new Schema({
     maxLeaveCount:{
         type:Number,
         required:true
-    },
-    leaveCountInterval:{
+    }, 
+    interval:{
         type:String,
         enum:[
             "Current Month",

@@ -1,100 +1,80 @@
-import mongoose, { Schema } from 'mongoose'
+import mongoose, { Schema } from "mongoose";
 
 const importationSchema = new Schema({
-    invoiceNo:{
-        type:String,
-        required:true
+    invoiceNo: {
+      type: String,
+      required: true,
     },
-    invoiceDate:{
-        type:Date
+    invoiceDate: {
+      type: Date,
     },
-    deliveryMethod:{
-        type:String
+    deliveryMethod: {
+      type: String,
     },
-    paymentMethod:{
-        type:String
+    paymentMethod: {
+      type: String,
     },
-    cRNumber:{
-        type:Number
+    cRNumber: {
+      type: Number,
     },
-    ofoqLicenseNumber:{
-        type:String
+    ofoqLicenseNumber: {
+      type: String,
     },
-    grn:{
-        type:String
+    grn: {
+      type: String,
     },
-    lpo:{
-        type:String
+    lpo: {
+      type: String,
     },
-    portOfDelivery:{
-        type:String
+    portOfDelivery: {
+      type: String,
     },
-    dateOfDelivery:{
-        type:Date
+    dateOfDelivery: {
+      type: Date,
     },
-    totalPayment:{
-        type:Number
+    totalPayment: {
+      type: Number,
     },
-    totalTax:{
-        type:String
+    totalTax: {
+      type: Number,
     },
+    invoice: {
+      type: String,
+    },
+    purchaseOrder: {
+      type: String,
+    },
+    catalogue: {
+      type: String,
+    },
+    freeSaleCertificate: {
+      type: String,
+    },
+    qualityAssuranceCertificate: {
+      type: String,
+    },
+    authorizedRepresentative: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "AuthorizedRepresentative",
+    },
+    manufacturer:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Manufacturer"
+    },
+    products: [
+      {
+        product: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
+        },
+        quantity: { type: Number },
+        expiry: { type: Date },
+        lotNo: { type: String },
+      },
+    ], 
+  },
+  { timestamps: true }
+);
 
-    invoice:{
-        type:String
-    },
-    purchaseOrder:{
-        type:String
-    },
-    catalogue:{
-        type:String
-    },
-    freeSaleCertificate:{
-        type:String
-    },
-    qualityAssuranceCertificate:{
-        type:String
-    },
-
-    authorizedRepresentativeName:{
-        type:Schema.Types.ObjectId,
-        ref:"AuthorizedRepresentative"
-    },
-    mobileNumber:{
-        type:String
-    },
-    authorizedRepresentativeEmail:{
-        type:String
-    },
-
-    manufacturerName:{
-        type:Schema.Types.ObjectId,
-        ref:"Manufacturer"
-    },
-    contactPersonNumber:{
-        type:String
-    },
-    manufacturerEmail:{
-        type:String
-    },
-    manufacturerCountryOfOrigin:{
-        type:String
-    },
-
-    productName:{
-        type:Schema.Types.ObjectId,
-        ref:"Product"
-    },
-    qty:{
-        type:String
-    },
-    expiry:{
-        type:Date
-    },
-    lotNo:{
-        type:String
-    }
-
-},{timestamps:true})
-
-const Importation = mongoose.model("Importation",importationSchema)
-export default Importation
+const Importation = mongoose.model("Importation", importationSchema);
+export default Importation;

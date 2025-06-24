@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose, { Schema } from 'mongoose'
 
 const recallSchema = new Schema({
     recalls:{
@@ -9,32 +9,13 @@ const recallSchema = new Schema({
         ],
         required:true
     },
-    manufacturerName:{
+    manufacturer:{
         type:Schema.Types.ObjectId,
         ref:'Manufacturer',
         required:function(){
             return this.recalls === "By Manufacturer"
         }
     },
-    manufacturerEmail:{
-        type:String,
-        required:function(){
-            return this.recalls === "By Manufacturer"
-        }
-    },
-    contactPersonNumber:{
-        type:Number,
-        required:function(){
-            return this.recalls === "By Manufacturer"
-        }
-    },
-    countryOfOrigin:{
-        type:String,
-        required:function(){
-            return this.recalls === "By Manufacturer"
-        }
-    },
-
     batchNo:{
         type:Schema.Types.ObjectId,
         ref:'Product',

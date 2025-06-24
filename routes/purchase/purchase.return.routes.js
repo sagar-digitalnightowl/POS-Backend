@@ -1,14 +1,25 @@
 import express from "express";
 import purchaseReturnController from "../../controllers/purchase/purchase.return.controller.js";
-import { upload } from "../../middlewares/multer.middleware.js"
+import { upload } from "../../middlewares/multer.middleware.js";
 
-const router=express.Router();
+const router = express.Router();
 
-router.post("/addPurchaseReturn",upload.single("attachDocuments"),purchaseReturnController.addPurchaseReturn)
-      .get("/getAllPurchaseReturn",purchaseReturnController.getAllPurchaseReturn)
-      .get("/getAllPurchaseReturn/:id",purchaseReturnController.getAllPurchaseReturnById)
-      .patch("/updatePurchaseReturn/:id",purchaseReturnController.updatePurchaseReturnById)
-      .delete("/deletePurchase/:id",purchaseReturnController.deletePurchaseById)
-
+router
+  .post(
+    "/addPurchaseReturn",
+    upload.fields([{ name: "attachDocument", maxCount: 1 }]),
+    purchaseReturnController.addPurchaseReturn
+  )
+  .get("/getAllPurchaseReturn", purchaseReturnController.getAllPurchaseReturn)
+  .get(
+    "/getPurchaseReturn/:id",
+    purchaseReturnController.getPurchaseReturnById
+  )
+  .patch(
+    "/updatePurchaseReturn/:id",
+    upload.fields([{ name: "attachDocument", maxCount: 1 }]),
+    purchaseReturnController.updatePurchaseReturnById
+  )
+  .delete("/deletePurchase/:id", purchaseReturnController.deletePurchaseReturnById);
 
 export default router;

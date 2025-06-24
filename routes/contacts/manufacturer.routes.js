@@ -11,6 +11,7 @@ router.post(
       manufacturerController.addManufacturer
     )
       .get("/getAllManufacturer",manufacturerController.getAllManufacturer)
+      .get("/getManufacturers",manufacturerController.getManufacturers)
       .get("/getManufacturer/:id",manufacturerController.getManufacturerById)
       .patch("/updateManufacturer/:id", upload.any(),manufacturerController.updateManufacturerById)
       .delete("/deleteManufacturer/:id",manufacturerController.deleteManufacturerById)

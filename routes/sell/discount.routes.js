@@ -3,11 +3,11 @@ import express from 'express'
 
 const router=express.Router();
 
-router.post("/addDiscount",discountController.addDiscount)
-      .get("/getAllDiscount",discountController.getAllDiscount)
-      .get("/getDiscount/:id",discountController.getDiscountById)
-      .patch("/updateDiscount/:id",discountController.updateDiscountById)
-      .delete("/deleteDiscount/:id",discountController.deleteDiscount)
+router.post("/addDiscount", discountController.addDiscount)
+      .get("/getAllDiscount", discountController.getAllDiscount)
+      .get("/getDiscount/:id", discountController.getDiscountById)
+      .patch("/updateDiscount/:id", discountController.updateDiscountById)
+      .delete("/deleteDiscount/:id", discountController.deleteDiscount)
 
 
 export default router

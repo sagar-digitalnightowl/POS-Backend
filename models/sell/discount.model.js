@@ -1,51 +1,57 @@
-import mongoose, { Schema } from 'mongoose'
+import mongoose, { Schema } from "mongoose";
 
-const discountSchema = new Schema({
-    name:{
-        type:String,
-        require:true
+const discountSchema = new Schema(
+  {
+    name: {
+      type: String,
+      require: true,
     },
-    product:{
-        type:String,
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
     },
-    brand:{
-        type:mongoose.Types.ObjectId,
-        ref:"Brand"
+    brand: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Brand",
     },
-    category:{
-        type:String
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
     },
-    location:{
-        type:String
+    location: {
+      type: String,
     },
-    priority:{
-        type:String
+    priority: {
+      type: String,
+      enum: ["Low", "Medium", "High"],
+      default: "Low",
     },
-    discountType:{
-        type:String
+    discountType: {
+      type: String,
     },
-    discountAmount:{
-        type:String
+    discountAmount: {
+      type: String,
     },
-    startDate:{
-        type:Date,
+    startDate: {
+      type: Date,
     },
-    endDate:{
-        type:Date
+    endDate: {
+      type: Date,
     },
-    sellingPriceGroup:{
-        type:String
+    sellingPriceGroup: {
+      type: String,
     },
-    applyInCustomerGroups:{
-        type:Boolean,
-        default:false
+    applyInCustomerGroups: {
+      type: Boolean,
+      default: false,
     },
-    isActive:{
-        type:Boolean,
-        default:false
-    }
-},
-{ timestamps: true })
+    isActive: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { timestamps: true }
+);
 
-const Discount = mongoose.model("Discount",discountSchema)
+const Discount = mongoose.model("Discount", discountSchema);
 export default Discount;

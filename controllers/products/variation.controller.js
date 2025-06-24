@@ -30,13 +30,15 @@ routes.addVariation = async (req, res) => {
 routes.getAllVariation = async (req, res) => {
   try {
     const { limit = 10, page = 1 } = req.query;
+    const totalVariations = await variationSchema.countDocuments();
+    const totalPage = Math.ceil(totalVariations/limit);
     const allDoc = await variationSchema
       .find()
       .skip(limit * (page - 1))
       .limit(limit);
     return res
       .status(200)
-      .json({ result: allDoc, message: "All Doc fetched suceesFully" });
+      .json({ result: allDoc, totalPage, message: "All Doc fetched suceesFully" });
   } catch (error) {
     return res.status(500).json({ error: "Something went wrong" });
   }

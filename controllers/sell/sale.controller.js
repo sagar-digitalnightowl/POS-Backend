@@ -1,8 +1,15 @@
 import saleModel from "../../models/sell/sale.model.js";
-import { uploadOnCloudinary, deleteFromCloudinary } from "../../utils/cloudinary.js";
+import {
+  uploadOnCloudinary,
+  deleteFromCloudinary,
+} from "../../utils/cloudinary.js";
 import customerModel from "../../models/contacts/customersAndSupplier.model.js";
-import {handleFilesUpload, updateFilesUpload} from "../../cloudService/fileService.js"
+import {
+  handleFilesUpload,
+  updateFilesUpload,
+} from "../../cloudService/fileService.js";
 import fs from "fs";
+import SaleReportModel from "../../models/reports/SaleReport.model.js";
 // import { v4 as uuidv4 } from "uuid";
 // import { uploadFile } from "../../utils/s3.js";
 
@@ -11,12 +18,14 @@ const routes = {};
 routes.addSales = async (req, res) => {
   try {
     const {
+      location,
       customer,
       payTerm,
       saleDate,
       status,
       invoiceSchema,
       invoiceNo,
+      products,
       discountType,
       discountAmount,
       orderTax,
@@ -31,62 +40,62 @@ routes.addSales = async (req, res) => {
       payments,
     } = req.body;
 
-    // let documents = {
-    //   attachDocument: null,
-    //   shippingDocuments: null,
-    // };
-
-    const uploadedDocuments  = await handleFilesUpload(req.files, "Sale");
-
-    // if (req.files) {
-    //   for (const [key, fileArray] of Object.entries(req.files)) {
-    //     if (fileArray && fileArray.length > 0) {
-    //       const file = fileArray[0]; // Assuming single file upload for each key
-    //       const localFilePath = `./public/temp/${file.filename}`;
-    //       const moduleName = "Sale";
-
-    //       const uploadResult = await uploadOnCloudinary(
-    //         localFilePath,
-    //         moduleName
-    //       );
-    //       if (uploadResult) {
-    //         documents[key] = uploadResult.secure_url;
-    //         fs.unlinkSync(localFilePath); // Clean up local file
-    //       } else {
-    //         throw new Error(`File upload for ${key} failed`);
-    //       }
-    //     } else {
-    //       console.error(`No files found for key: ${key}`);
-    //     }
-    //   }
-    // } else {
-    //   console.log("No files were uploaded");
-    // }
-
     const verifyCustomer = await customerModel.findById(customer);
     if (!verifyCustomer) {
       return res.status(404).json({ error: "Customer is not found" });
     }
-    // if (!payTerm || typeof payTerm !== "object") {
-    //     return res.status(400).json({ error: "Invalid or missing payTerm" });
-    // }
-    // if (!payTerm.value || !payTerm.unit) {
-    //     return res.status(400).json({ error: "payTerm.value and payTerm.unit are required" });
-    // }
+
+    const uploadedDocuments = await handleFilesUpload(req.files, "Sale");
+
+    const parsedPayTerm = payTerm ? JSON.parse(payTerm) : {};
+    const parsedProducts = products ? JSON.parse(products) : [];
+    const parsedExpenses = additionalExpenses
+      ? JSON.parse(additionalExpenses)
+      : [];
+    const parsedPayments = payments ? JSON.parse(payments) : {};
+
+    if (parsedProducts?.length === 0) {
+      return res.status(400).json({ error: "add atleast one product" });
+    }
+
+    let allProductsAmount = 0;
+    if (parsedProducts?.length > 0) {
+      parsedProducts.map((product) => {
+        allProductsAmount += product.totalAmount;
+      });
+    }
+
+    let allAdditionalExpenseAmount = 0;
+    if (parsedExpenses?.length > 0) {
+      parsedExpenses.map((expense) => {
+        allAdditionalExpenseAmount += Number(expense.amount || 0);
+      });
+    }
+
+    let totalDiscountAmount = 0;
+    if (discountType === "Fixed") {
+      totalDiscountAmount = discountAmount;
+    } else if (discountType === "Percentage") {
+      totalDiscountAmount = allProductsAmount * (discountAmount / 100);
+    }
+
+    let totalBalance =
+      Number(allProductsAmount || 0) -
+      Number(totalDiscountAmount || 0) +
+      Number(shippingCharges || 0) +
+      Number(allAdditionalExpenseAmount || 0) -
+      Number(parsedPayments.amount || 0).toFixed(2);
 
     const newSale = new saleModel({
+      location,
       customer,
-      payTerm: payTerm
-        ? {
-            value: payTerm.value || null,
-            unit: payTerm.unit || null,
-          }
-        : null,
+      payTerm: parsedPayTerm,
       saleDate,
       status,
       invoiceSchema,
       invoiceNo,
       attachDocument: uploadedDocuments.attachDocument || null,
+      products: parsedProducts,
       discountType,
       discountAmount,
       orderTax,
@@ -98,11 +107,17 @@ routes.addSales = async (req, res) => {
       deliveredTo,
       deliveryPerson,
       shippingDocuments: uploadedDocuments.shippingDocuments || null,
-      additionalExpenses,
-      payments,
+      additionalExpenses: parsedExpenses,
+      payments: parsedPayments,
+      totalBalance,
     });
 
     await newSale.save();
+
+    // create sale report for new sale
+    await SaleReportModel.create({
+      sale: newSale?._id,
+    });
 
     res.status(201).json({
       message: "Sale added successfully",
@@ -116,22 +131,47 @@ routes.addSales = async (req, res) => {
 
 routes.getAllSales = async (req, res) => {
   try {
-    const allSales = await saleModel.find().populate("customer");
+    const { page = 1, limit = 10 } = req.query;
+
+    const totalItem = await saleModel.countDocuments();
+    const totalPage = Math.ceil(totalItem / limit);
+
+    const allSales = await saleModel
+      .find()
+      .populate("customer")
+      .skip((page - 1) * limit)
+      .limit(limit);
 
     if (!allSales || allSales.length === 0) {
       return res.status(404).json({ message: "No Sales found" });
     }
 
-    return res
-      .status(200)
-      .json({ result: allSales, message: "Sales retrieved successfully" });
+    return res.status(200).json({
+      result: allSales,
+      totalPage,
+      message: "Sales retrieved successfully",
+    });
   } catch (error) {
     console.log("error = ", error);
     res.status(500).json({ error: "Somehing Went Wrong" });
   }
 };
 
-routes.getAllSaleslesById = async (req, res) => {
+routes.getSales = async (req, res) => {
+  try {
+    const allSales = await saleModel.find().select("invoiceNo saleDate");
+
+    return res.status(200).json({
+      result: allSales,
+      message: "Sales retrieved successfully",
+    });
+  } catch (error) {
+    console.log("error = ", error);
+    res.status(500).json({ error: "Somehing Went Wrong" });
+  }
+};
+
+routes.getSaleById = async (req, res) => {
   try {
     const salesId = req.params.id;
 
@@ -165,28 +205,98 @@ routes.updateSalesById = async (req, res) => {
       return res.status(400).json({ error: "Sales return Id is required" });
     }
 
+    const existSale = await saleModel.findById(salesId);
+    if (!existSale) {
+      return res.status(404).json({ error: "Sale not found" });
+    }
+
     const verifyCustomer = await customerModel.findById(updateData.customer);
     if (!verifyCustomer) {
       return res.status(404).json({ error: "Customer is not found" });
     }
 
-    const existSale = await saleModel.findById(salesId);
-
     // Handle file uploads if present
+
     if (req.files) {
       try {
-        const uploadedFiles = await updateFilesUpload(req.files, existSale, "Sale");
+        const uploadedFiles = await updateFilesUpload(
+          req.files,
+          existSale,
+          "Sale"
+        );
         Object.assign(updateData, uploadedFiles); // Merge new file URLs into updateData
       } catch (error) {
         return res.status(500).json({ error: error.message });
       }
     }
 
+    const {
+      payTerm,
+      products,
+      additionalExpenses,
+      payments,
+      discountType,
+      discountAmount,
+      shippingCharges,
+    } = updateData;
+
+    const parsedPayTerm = payTerm ? JSON.parse(payTerm) : {};
+    const parsedProducts = products ? JSON.parse(products) : [];
+    const parsedExpenses = additionalExpenses
+      ? JSON.parse(additionalExpenses)
+      : [];
+    const parsedPayments = payments ? JSON.parse(payments) : {};
+
+    if (parsedProducts?.length === 0) {
+      return res.status(400).json({ error: "add atleast one product" });
+    }
+
+    let allProductsAmount = 0;
+    if (parsedProducts?.length > 0) {
+      parsedProducts.map((product) => {
+        allProductsAmount += product.totalAmount;
+      });
+    }
+
+    let allAdditionalExpenseAmount = 0;
+    if (parsedExpenses?.length > 0) {
+      parsedExpenses.map((expense) => {
+        allAdditionalExpenseAmount += Number(expense.amount || 0);
+      });
+    }
+
+    let totalDiscountAmount = 0;
+    if (discountType === "Fixed") {
+      totalDiscountAmount = discountAmount;
+    } else if (discountType === "Percentage") {
+      totalDiscountAmount = allProductsAmount * (discountAmount / 100);
+    }
+
+    let totalBalance =
+      Number(allProductsAmount || 0) -
+      Number(totalDiscountAmount || 0) +
+      Number(shippingCharges || 0) +
+      Number(allAdditionalExpenseAmount || 0) -
+      Number(parsedPayments.amount || 0).toFixed(2);
+
     // Update the sale record
-    const salesReturn = await saleModel.findByIdAndUpdate(salesId, updateData, { new: true });
+    const salesReturn = await saleModel.findByIdAndUpdate(
+      salesId,
+      {
+        ...updateData,
+        payTerm: parsedPayTerm,
+        additionalExpenses: parsedExpenses,
+        payments: parsedPayments,
+        products: parsedProducts,
+        totalBalance,
+      },
+      { new: true }
+    );
 
     if (!salesReturn) {
-      return res.status(404).json({ error: `Sales not found with id:${salesId} `});
+      return res
+        .status(404)
+        .json({ error: `Sales not found with id:${salesId} ` });
     }
 
     return res.status(200).json({
@@ -199,7 +309,6 @@ routes.updateSalesById = async (req, res) => {
   }
 };
 
-
 routes.deleteSalesById = async (req, res) => {
   try {
     const salesId = req.params.id;
@@ -211,7 +320,9 @@ routes.deleteSalesById = async (req, res) => {
     // Find the sale first to get document URLs
     const sale = await saleModel.findById(salesId);
     if (!sale) {
-      return res.status(404).json({ error: `Sales not found with ID: ${salesId}` });
+      return res
+        .status(404)
+        .json({ error: `Sales not found with ID: ${salesId}` });
     }
 
     // Delete files from Cloudinary if they exist
@@ -220,19 +331,26 @@ routes.deleteSalesById = async (req, res) => {
     for (const key of fileKeys) {
       if (sale[key]) {
         const decodedUrl = decodeURIComponent(sale[key]);
-        const publicId = decodedUrl.replace(/^.*\/(POS_Project\/Sale\/)/, "$1").split(".")[0];
+
+        const match = decodedUrl.match(/upload\/v\d+\/(.+)\.[a-zA-Z]+$/);
+        const publicId = match ? match[1] : null;
 
         console.log(`Deleting file from Cloudinary: ${publicId}`);
         const deleteResult = await deleteFromCloudinary(publicId);
 
         if (!deleteResult) {
-          return res.status(500).json({ error: `Failed to delete ${key} from Cloudinary` });
+          return res
+            .status(500)
+            .json({ error: `Failed to delete ${key} from Cloudinary` });
         }
       }
     }
 
     // Delete the sale from the database
-    await saleModel.findByIdAndDelete(salesId);
+    const deletedSale = await saleModel.findByIdAndDelete(salesId);
+
+    //Delete the sale report from DB
+    await SaleReportModel.deleteOne({ sale: deletedSale?._id });
 
     return res.status(200).json({ message: "Sales Deleted Successfully" });
   } catch (error) {
@@ -240,6 +358,5 @@ routes.deleteSalesById = async (req, res) => {
     res.status(500).json({ error: "Something Went Wrong" });
   }
 };
-
 
 export default routes;

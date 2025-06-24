@@ -1,80 +1,111 @@
-import mongoose, {Schema} from "mongoose"
+import mongoose, { Schema } from "mongoose";
 
-const purchaseSchema = new Schema({
-    supplier:{
-        type:mongoose.Types.ObjectId,
-        ref:"CustomerAndSupplier",
-        required:true
+const purchaseSchema = new Schema(
+  {
+    supplier: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CustomerAndSupplier",
+      required: true,
     },
-    referenceNo:{
-        type:String,
+    referenceNo: {
+      type: String,
     },
-    purchaseDate:{
-        type:Date,
-        required:true
+    purchaseDate: {
+      type: Date,
+      required: true,
     },
-    purchaseStatus:{
-        type:String,
-        enum:["Received","Pending","Ordered"],
-        required:true
+    purchaseStatus: {
+      type: String,
+      enum: ["Received", "Pending", "Ordered"],
+      required: true,
     },
-    businessLocation:{
-        type:mongoose.Types.ObjectId,
-        ref:"Product",
-        required:true
+    businessLocation: {
+      type: String,
+      required: true,
     },
     payTerm: {
-        duration: {
-          type: Number,
-          min: 1, 
-        },
-        termType: {
-          type: String,
-          enum: ["Days", "Months"],
-        },
+      value: {
+        type: Number,
+        min: 1,
       },
-    attachDocument:{
-        type:String
+      unit: {
+        type: String,
+        enum: ["Months", "Days"],
+      },
     },
-    discountType:{
-        type:String,
-        enum:[
-            "None","Fixed","Percentage"
-        ]
+    attachDocument: {
+      type: String,
     },
-    discountAmount:{
-        type:Number,
+    products: [
+      {
+        product: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
+        },
+        quantity: { type: Number, min: 1 },
+        discountPercent: { type: Number },
+        taxPercent: { type: Number },
+        unitSellingPrice: { type: Number },
+        totalAmount: { type: Number },
+      },
+    ],
+    discountType: {
+      type: String,
+      enum: ["None", "Fixed", "Percentage"],
     },
-    purchaseTax:{
-        type:String
+    discountAmount: {
+      type: Number,
     },
-    additionalNotes:{
-        type:String
+    purchaseTax: {
+      type: String,
     },
-    shippingDetails:{
-        type:String
+    additionalNotes: {
+      type: String,
     },
-    additionalShippingcharges:{
-        type:Number
+    shippingDetails: {
+      type: String,
     },
-    amount:{
-        type:Number,
-        required:true,
-        min:0
+    additionalShippingcharges: {
+      type: Number,
     },
-    paidOn:{
-        type:Date,
-        required:true
+    additionalExpenses: [
+      {
+        name: { type: String },
+        amount: { type: Number, default: 0 },
+      },
+    ],
+    payments: {
+      amount: { type: Number },
+      paidOn: { type: Date, default: Date.now },
+      paymentMethod: {
+        type: String,
+        enum: [
+          "",
+          "Advance",
+          "Cash",
+          "Card",
+          "Cheque",
+          "Bank Transfer",
+          "Other",
+          "Benefit Pay",
+          "Custom Payment 1",
+          "Custom Payment 2",
+          "Custom Payment 3",
+          "Custom Payment 4",
+          "Custom Payment 5",
+          "Custom Payment 6",
+          "Custom Payment 7",
+        ],
+      },
+      paymentNote: { type: String }
     },
-    paymentMethod:{
-        type:String,
-        required:true
+    totalPurchaseAmount: {
+      type: Number,
+      default: 0,
     },
-    paymentNote:{
-        type:String
-    }
-
-},{ timestamps: true })
+  },
+  { timestamps: true }
+);
 
 const Purchase = mongoose.model("Purchase", purchaseSchema);
 export default Purchase;

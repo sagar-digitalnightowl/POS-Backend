@@ -20,43 +20,25 @@ const complaintHandlingSchema = new Schema({
         type:Date,
         default:Date.now
     },
-    authorizedRepresentativeName:{
+    authorizedRepresentative:{
         type:Schema.Types.ObjectId,
         ref:'AuthorizedRepresentative',
         required:true
     },
-    mobileNumber:{
-        type:Number
-    },
-    authorizedRepresentativeEmail:{
-        type:String
-    },
-    CRCPRno:{
-        type:String
-    },
 
-    medicalDeviceName:{
+    medicalDevice:{
         type:Schema.Types.ObjectId,
-        ref:'Product'
+        ref:'Product',
+        required: true
     },
-    model:{
-        type:String
-    },
-    serialNo:{
-        type:String
-    },
-    gmdnCode:{
-        type:String
-    },
-    hsCode:{
-        type:String
-    },
+   
     complaintDescription:{
         type:String
     },
     actionTakenByAR:{
         type:String
     },
+    //file
     supportiveDocuments:{
         type:String
     }

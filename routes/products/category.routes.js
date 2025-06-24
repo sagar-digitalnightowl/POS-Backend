@@ -4,6 +4,7 @@ import categoryController from "../../controllers/products/category.controller.j
 const router=express.Router()
 router.post("/addCategory",categoryController.addCategory)
       .get("/getAllCategory",categoryController.getAllCategory)
+      .get("/getCategories",categoryController.getCategories)
       .get("/getCategory/:id",categoryController.getCategoryById)
       .patch("/updateCategory/:id",categoryController.updateCategoryById)
       .delete("/deleteCategory/:id",categoryController.deleteCategoryById)

@@ -5,6 +5,7 @@ const router=express.Router();
 
 router.post('/addhealthFacility',healthCareFacilityController.addhealthFacility)
       .get("/getAllHealthFacility",healthCareFacilityController.getAllHealthFacility)
+      .get("/getHealthFacilities",healthCareFacilityController.getHealthFacilities)
       .get("/getHealthFacility/:id",healthCareFacilityController.getHealthFacilityById)
       .patch("/updateHealthFacility/:id",healthCareFacilityController.updateHealthFacilityById)
       .delete("/deleteHealthFacility/:id",healthCareFacilityController.deleteHealthFacilityById)

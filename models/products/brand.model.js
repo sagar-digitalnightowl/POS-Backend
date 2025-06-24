@@ -14,7 +14,7 @@ const brandSchema=new Schema({
             type:Boolean,
             default:false
         }
-})
+}, {timestamps: true})
 
 const Brand=mongoose.model("Brand",brandSchema)
 

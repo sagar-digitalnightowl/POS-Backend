@@ -22,13 +22,16 @@ routes.addProductMapping = async (req, res) => {
 routes.getAllProductMapping = async (req, res) => {
   try {
     const { limit = 10, page = 1 } = req.query;
+    const allProductMapping = await productMappingSchema.countDocuments();
+    const totalPage = Math.ceil(allProductMapping/limit);
+
     const allDoc = await productMappingSchema
       .find()
       .skip(limit * (page - 1))
       .limit(limit);
     return res
       .status(200)
-      .json({ result: allDoc, message: "Document fetched successfully" });
+      .json({ result: allDoc, totalPage, message: "Document fetched successfully" });
   } catch (error) {
     return res.status(500).json({ error: "Something went wrong" });
   }

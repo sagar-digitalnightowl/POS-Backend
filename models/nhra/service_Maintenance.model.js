@@ -1,127 +1,87 @@
-import mongoose, { Schema } from 'mongoose'
+import mongoose, { Schema } from "mongoose";
 
-const service_MaintenanceSchema = new Schema({
-    deviceName:{
-        type:Schema.Types.ObjectId,
-        ref:'Product'
-    },
-    modelNumber:{
-        type:String
-    },
-    gmdnCode:{
-        type:String
-    },
-    serialNumber:{
-        type:String
-    },
-    batchNumber:{
-        type:String
-    },
-    hsCode:{
-        type:String
+const service_MaintenanceSchema = new Schema(
+  {
+    device: {
+      type: Schema.Types.ObjectId,
+      ref: "Product",
     },
 
-    healthcarefacilityName:{
-        type:Schema.Types.ObjectId,
-        ref:'HealthFacility'
-    },
-    contactPersonMobile:{
-        type:Number
-    },
-    contactPerson:{
-        type:String
-    },
-    email:{
-        type:String
-    },
-    contactPersonCPR:{
-        type:String
-    },
-    repairMaintenanceServiceRequested:{
-        type:[String],
-        enum:[
-            "Emergency",
-            "Equipment Repair",
-            "Corrective",
-            "Preventive",
-            "Regular Maintenance",
-            "48 Hours",
-            "Installation",
-            "Pre-Installation",
-            "Vandalism",
-            "Field Modification",
-            "Other"
-        ]
-    },
-    dateOfRequestforMaintenance:{
-        type:Date,
-        default:Date.now
-    },
-    dateOfMaintenance:{
-        type:Date,
-        default:Date.now
-    },
-    descriptionOfMaintenanceActivities:{
-        type:String
-    },
-    detailsOfMaterialsUsed:{
-        type:String
-    },
-    jobCompleted:{
-        type:String,
-        enum:[
-            "Yes",
-            "No",
-            "N/A"
-        ]
-    },
-    replacementOrRemovalOfEquipmentNeeded:{
-        type:String,
-        enum:[
-            "Yes",
-            "No",
-            "N/A"
-        ]
-    },
-    isTheEquipmentLabelledWithTheLastAndNextDateOfCalibrationMaintenance:{
-        type:String,
-        enum:[
-            "Yes",
-            "No",
-            "N/A"
-        ]
-    },
-    maintenanceActivitySupervisedBy:{
-        type:String,
-    },
-    invoiceNumber:{
-        type:Number
-    },
-    invoiceDate:{
-        type:Date,
-        default:Date.now
+    healthcarefacility: {
+      type: Schema.Types.ObjectId,
+      ref: "HealthFacility",
     },
 
-    partNumber:{
-        type:Number
+    repairMaintenanceServiceRequested: {
+      type: [String],
+      enum: [
+        "Emergency",
+        "Equipment Repair",
+        "Corrective",
+        "Preventive",
+        "Regular Maintenance",
+        "48 Hours",
+        "Installation",
+        "Pre-Installation",
+        "Vandalism",
+        "Field Modification",
+        "Other",
+      ],
     },
-    materialsUsed:{
-        type:String
+    dateOfRequestforMaintenance: {
+      type: Date,
+      default: Date.now,
     },
-    quantity:{
-        type:Number
+    dateOfMaintenance: {
+      type: Date,
+      default: Date.now,
     },
-    cost:{
-        type:Number
+    descriptionOfMaintenanceActivities: {
+      type: String,
     },
-    yesOrNo:{
-        type:String,
-        enum:[
-            "Yes",
-            "No"
-        ]
-    }
-},{timestamp:true})
+    detailsOfMaterialsUsed: {
+      type: String,
+    },
+    jobCompleted: {
+      type: String,
+      enum: ["Yes", "No", "N/A"],
+    },
+    replacementOrRemovalOfEquipmentNeeded: {
+      type: String,
+      enum: ["Yes", "No", "N/A"],
+    },
+    isTheEquipmentLabelledWithTheLastAndNextDateOfCalibrationMaintenance: {
+      type: String,
+      enum: ["Yes", "No", "N/A"],
+    },
+    maintenanceActivityPerformedBy: {
+      type: String,
+    },
+    maintenanceActivitySupervisedBy: {
+      type: String,
+    },
+    invoiceNumber: {
+      type: Number,
+    },
+    invoiceDate: {
+      type: Date,
+      default: Date.now,
+    },
+    parts: [
+      {
+        partNumber: { type: Number },
+        materialsUsed: { type: String },
+        quantity: { type: Number },
+        cost: { type: Number },
+        warranty: { type: String, enum: ["Yes", "No"] },
+      },
+    ],
+  },
+  { timestamp: true }
+);
 
-const Service_Maintenance = mongoose.model("Service_Maintenance",service_MaintenanceSchema)
-export default Service_Maintenance
+const Service_Maintenance = mongoose.model(
+  "Service_Maintenance",
+  service_MaintenanceSchema
+);
+export default Service_Maintenance;

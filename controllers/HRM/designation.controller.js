@@ -10,7 +10,7 @@ routes.addDesignation = async(req,res)=>{
         }
         const designation = await designationModel.create(data)
 
-        return res.status(200).json({result:designation,message:"Designation added Successfully"})
+        return res.status(201).json({result:designation,message:"Designation added Successfully"})
     } catch (error) {
         console.log("error = ", error);
         res.status(500).json({ error: "Something Went Wrong" });

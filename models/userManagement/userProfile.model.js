@@ -15,6 +15,7 @@ const userProfileSchema=new Schema({
     // },
     role:{
         type:String,
+        ref: "Role"
     },
     accessAllLocations:{
        type:Boolean,

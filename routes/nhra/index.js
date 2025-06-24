@@ -6,6 +6,7 @@ import safetyNotice from "./safetyNotice.routes.js"
 import complaintHandeling from "./complaintHandling.routes.js"
 import dispose from "./dispose.routes.js"
 import alertModification from "./alert_Modification.routes.js"
+import recall from "./recall.routes.js"
 import serviceMaintenance from "./service_Maintenance.routes.js"
 import express from 'express'
 
@@ -20,6 +21,7 @@ router
      .use("/complaintHandeling",complaintHandeling)
      .use("/dispose",dispose)
      .use("/alertModification",alertModification)
+     .use("/recall", recall)
      .use("/serviceMaintenance",serviceMaintenance)
 
 export default router;

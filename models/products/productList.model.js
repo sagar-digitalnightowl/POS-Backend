@@ -14,7 +14,8 @@ const productSchema = new mongoose.Schema({
     required: true,
   },
   unit: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Unit",
     required: true,
   },
   brand: {
@@ -37,7 +38,7 @@ const productSchema = new mongoose.Schema({
   },
   isMedical: {
     type: String,
-    enum:["Yes","No"]
+    enum: ["Yes", "No"]
   },
   manufacturer: {
     type: mongoose.Schema.Types.ObjectId,
@@ -77,7 +78,7 @@ const productSchema = new mongoose.Schema({
   notForSelling: {
     type: Boolean,
     defualt: false,
-  }, 
+  },
   weight: {
     type: Number,
     required: true,
@@ -91,7 +92,7 @@ const productSchema = new mongoose.Schema({
   productModel: {
     type: String,
   },
-  deviceName:{
+  deviceName: {
     type: String,
   },
   productSerialNo: {
@@ -149,7 +150,7 @@ const productSchema = new mongoose.Schema({
       },
     },
   },
-});
+}, { timestamps: true });
 
 const Product = mongoose.model("Product", productSchema);
 export default Product;

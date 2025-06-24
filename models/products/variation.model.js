@@ -1,17 +1,17 @@
 import mongoose from "mongoose";
 
-const variationSchema=new mongoose.Schema({
-    variationName:{
-         type:String,
-         required:true,
+const variationSchema = new mongoose.Schema({
+    variationName: {
+        type: String,
+        required: true,
         //  unique:true 
     },
-    addVariationValue:{
-        type:String,
-        required:true,
+    addVariationValue: {
+        type: String,
+        required: true,
         // unique:true
-    }     
-},{timestamps:true})
+    }
+}, { timestamps: true })
 
-const Variation=mongoose.model("Variation",variationSchema)
+const Variation = mongoose.model("Variation", variationSchema)
 export default Variation;

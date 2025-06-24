@@ -42,13 +42,31 @@ routes.addJobSheet = async (req, res) => {
 routes.getAllJobSheet = async (req, res) => {
   try {
     const { limit = 10, page = 1} = req.query;
+    const allJobSheet = await jobSheetSchema.countDocuments();
+    const totalPage = Math.ceil(allJobSheet/limit);
     const allDoc = await jobSheetSchema
       .find()
+      .populate({
+        path: "customer",
+        select: "firstName middleName lastName"
+      })
+      .populate({
+        path: "brand",
+        select: "name"
+      })
+      .populate({
+        path: "device",
+        select: "deviceName"
+      })
+      .populate({
+        path: "deviceModel",
+        select: "deviceModel"
+      })
       .skip(limit * (page - 1))
       .limit(limit);
     return res
       .status(200)
-      .json({ result: allDoc, message: "Document fetched successfully" });
+      .json({ result: allDoc, totalPage, message: "Document fetched successfully" });
   } catch (error) {
     return res.status(500).json({ error: "Something went wrong" });
   }
@@ -57,7 +75,11 @@ routes.getAllJobSheet = async (req, res) => {
 routes.getJobSheetById = async (req, res) => {
   try {
     const jobSheetId = req.params.id;
-    const doc = await jobSheetSchema.find(jobSheetId);
+    if(!jobSheetId) return res.status(400).json({ error: "Job sheet Id is required" })
+
+    const doc = await jobSheetSchema.findById(jobSheetId);
+
+    console.log(doc, "joc sheet")
     if (!doc)
       return res.status(404).json({ error: "Document not found with this id" });
     return res
@@ -67,6 +89,7 @@ routes.getJobSheetById = async (req, res) => {
     res.status(500).json({ error: "Something went wrong" });
   }
 };
+
 
 routes.updateJobSheetById = async (req, res) => {
   try {

@@ -10,5 +10,6 @@ router.post("/signUp",adminController.signUp)
       .post("/changePassword", authMiddleware, adminController.changePassword)
       .post("/forgetPassword", adminController.forgetPassword)
       .post("/resetPassword", adminController.resetPassword)
+      .post("/logout", adminController.logout)
 
 export default router
